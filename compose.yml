@@ -1,6 +1,6 @@
 services:
   web:
-    image: nginx:alpine
+    image: httpd:2.4-alpine
     container_name: technova-web
     restart: unless-stopped
     ports:
