@@ -1,0 +1,3231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+ifwdxo2BtaDNndZW7bg4w9wnF3VEGBlTZNzr+mBnDE='; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="generator" content="lern-kanban">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiM0ZjQ2ZTUiLz48cmVjdCB4PSIxMiIgeT0iMTQiIHdpZHRoPSIxMSIgaGVpZ2h0PSIzNiIgcng9IjIuNSIgZmlsbD0iI2ZmZiIvPjxyZWN0IHg9IjI2LjUiIHk9IjE0IiB3aWR0aD0iMTEiIGhlaWdodD0iMjQiIHJ4PSIyLjUiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii44NSIvPjxyZWN0IHg9IjQxIiB5PSIxNCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE2IiByeD0iMi41IiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIuNyIvPjwvc3ZnPg==">
+<title>LF10 – Microcloud-Stack mit Git, GitHub und CI</title>
+<style>:root {
+  --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0eee9;
+  --ink: #1a1a18; --muted: #6b6a64;
+  --line: rgba(0,0,0,.10); --line2: rgba(0,0,0,.18);
+  --accent: #4f46e5; --ok: #16a34a; --wip: #eab308; --todo: #94a3b8; --danger: #dc2626;
+  --radius: 10px; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 12px rgba(0,0,0,.04);
+  --pad-x: 22px; /* horizontaler Seitenabstand, im Mobil-Breakpoint reduziert */
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181b; --surface: #27272a; --surface2: #1f1f22;
+    --ink: #e4e4e7; --muted: #a1a1aa;
+    --line: rgba(255,255,255,.10); --line2: rgba(255,255,255,.20);
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+* { box-sizing: border-box; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+#app { max-width: 1400px; margin: 0 auto; }
+.app-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px var(--pad-x) 6px; }
+.app-header-text { min-width: 0; }
+.app-header-aside { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.app-header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+.app-header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+/* Timer */
+#timerBanner {
+  display: none; align-items: center; gap: 7px;
+  background: var(--accent); color: #fff; padding: 5px 10px; border-radius: 99px;
+  font-size: 12px; max-width: 340px;
+}
+#timerBanner .elapsed { font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+#timerBanner .tb-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#timerBanner .stop-btn {
+  background: rgba(255,255,255,.22); border: 0; color: #fff;
+  padding: 2px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; line-height: 1.4; flex-shrink: 0;
+}
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; padding: 6px var(--pad-x) 0; border-bottom: 1px solid var(--line); }
+.tab {
+  padding: 9px 18px; font-size: 13px; font-weight: 600; border: 0; background: none;
+  color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+.tab:hover { color: var(--ink); }
+
+/* Toolbar */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px var(--pad-x); align-items: center; }
+.search {
+  border: 1px solid var(--line2); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 13px; padding: 7px 11px; border-radius: 8px; width: 220px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  border: 1px solid var(--line2); background: transparent; color: var(--ink);
+  font-size: 12px; padding: 5px 11px; border-radius: 99px; cursor: pointer; transition: .12s;
+}
+.chip:hover { border-color: var(--ink); }
+.chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.filter-sep { align-self: stretch; width: 1px; min-height: 22px; margin: 0 4px; background: var(--line2); }
+.spacer { flex: 1; }
+.btn {
+  border: 1px solid var(--line2); background: var(--surface); color: var(--ink);
+  font-size: 12px; padding: 7px 13px; border-radius: 8px; cursor: pointer; transition: .12s;
+}
+.btn:hover { border-color: var(--ink); }
+.btn.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.sm { padding: 4px 10px; font-size: 11px; }
+
+/* Projekt-Verweise oben rechts */
+.own-board-link {
+  flex-shrink: 0;
+  background: var(--accent); color: #fff; text-decoration: none;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  padding: 7px 14px; border-radius: 99px; box-shadow: var(--shadow);
+  transition: .12s;
+}
+.own-board-link:hover { background: color-mix(in srgb, var(--accent) 84%, #000); }
+.own-board-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Fork-Ribbon: gefaltete Eck-Ecke (reines CSS, CSP-sicher, kein externes Bild) */
+.fork-ribbon {
+  position: fixed; z-index: 1000; top: 36px; right: -52px;
+  width: 200px; padding: 6px 0;
+  background: var(--accent); color: #fff;
+  text-align: center; text-decoration: none;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  transform: rotate(45deg);
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  /* die zwei eingenähten Linien erzeugen den „umgeblättertes Papier"-Effekt */
+  border-top: 1px dashed rgba(255,255,255,.5);
+  border-bottom: 1px dashed rgba(255,255,255,.5);
+}
+.fork-ribbon:hover { background: color-mix(in srgb, var(--accent) 84%, #000); }
+.fork-ribbon:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+
+/* Board */
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 var(--pad-x) 28px; }
+.col { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface2); display: flex; flex-direction: column; min-height: 120px; }
+.col-h { padding: 10px 14px; font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.col-h .cnt { color: var(--muted); font-weight: 400; }
+.list { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 50px; border-radius: var(--radius); }
+.list.drag-over { background: color-mix(in srgb, var(--accent) 10%, transparent); outline: 2px dashed var(--accent); outline-offset: -4px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--muted);
+  border-radius: 8px; padding: 10px 12px; cursor: grab; position: relative; box-shadow: var(--shadow);
+}
+.card:active { cursor: grabbing; }
+.card.dragging { opacity: .4; }
+.card .cid { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .3px; }
+.card h3 { font-size: 13px; font-weight: 600; margin: 3px 0 4px; padding-right: 18px; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.tag { font-size: 10px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line2); color: var(--muted); }
+.tag.phase { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.card-todos, .dep-indicator { font-size: 10px; color: var(--muted); margin-top: 5px; }
+.dep-indicator { color: var(--accent); }
+.avatars { display: flex; gap: 3px; margin-top: 6px; }
+.avatar { width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 9px; font-weight: 700; display: grid; place-items: center; }
+.del { position: absolute; top: 6px; right: 7px; border: 0; background: none; color: var(--muted); font-size: 15px; cursor: pointer; opacity: .4; }
+.del:hover { opacity: 1; color: var(--danger); }
+.add-btn { margin: 6px 10px 12px; border: 1px dashed var(--line2); background: transparent; color: var(--muted); font-size: 12px; padding: 8px; border-radius: 8px; cursor: pointer; }
+.add-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+/* Dialog */
+.dlg {
+  border: 1px solid var(--line2); border-radius: 14px; background: var(--surface); color: var(--ink);
+  padding: 0; width: min(640px, 94vw); max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  margin: auto; /* zentriert das modale Dialogfeld (überschreibt den *{margin:0}-Reset) */
+}
+.dlg::backdrop { background: rgba(0,0,0,.4); backdrop-filter: blur(2px); }
+.dlg-head { padding: 18px 22px 16px; border-top: 4px solid var(--accent); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; }
+.dlg-head .cid { font-size: 11px; font-weight: 700; letter-spacing: .4px; }
+.dlg-head h2 { font-size: 17px; margin-top: 4px; }
+.dlg-head-tags { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.pill { font-size: 10px; padding: 3px 10px; border-radius: 99px; color: #fff; font-weight: 600; white-space: nowrap; }
+.pill.ghost { background: transparent; border: 1px solid var(--line2); color: var(--muted); }
+.pill.done { background: var(--ok); } .pill.wip { background: var(--wip); } .pill.todo { background: var(--todo); }
+.dlg-body { padding: 16px 22px; }
+.dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--surface); }
+.detail-body { font-size: 13px; line-height: 1.65; }
+.detail-body h1,.detail-body h2,.detail-body h3 { margin: 12px 0 5px; font-size: 15px; }
+.detail-body code { background: var(--line); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.detail-body a { color: var(--accent); }
+.detail-body ul,.detail-body ol { padding-left: 20px; margin: 5px 0; }
+.detail-body blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--muted); margin: 8px 0; }
+.detail-body table { border-collapse: collapse; margin: 8px 0; width: 100%; font-size: 12px; }
+.detail-body th,.detail-body td { border: 1px solid var(--line2); padding: 5px 8px; text-align: left; }
+.detail-body th { background: var(--surface2); }
+.md-check { color: var(--accent); }
+
+/* Panels in detail */
+.panel { margin-top: 14px; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; }
+.panel-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.panel-head .muted, .muted { color: var(--muted); font-weight: 400; }
+.panel-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.panel-row .grow { flex: 1; min-width: 120px; }
+.bar { height: 7px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+.mini-num { width: 60px; }
+.todo-list, .res-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.todo-list li, .res-list li { display: flex; align-items: center; gap: 8px; }
+.todo-list label { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; }
+.todo-list .done { text-decoration: line-through; color: var(--muted); }
+.icon-del { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 15px; }
+.icon-del:hover { color: var(--danger); }
+.people-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.dep-card { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin-top: 6px; cursor: pointer; }
+.dep-card:hover { border-color: var(--accent); }
+.dep-bar { width: 4px; height: 30px; border-radius: 2px; flex-shrink: 0; }
+.dep-card .cid { font-size: 10px; font-weight: 700; color: var(--muted); }
+
+/* Forms */
+input, textarea, select { width: 100%; font: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid var(--line2); border-radius: 7px; background: var(--bg); color: var(--ink); }
+input[type="color"] { padding: 2px; height: 34px; }
+input[type="checkbox"] { width: auto; }
+textarea.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; min-height: 140px; resize: vertical; }
+.field { display: block; margin-top: 10px; }
+.field > span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dep-picker { max-height: 160px; overflow-y: auto; border: 1px solid var(--line2); border-radius: 7px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.dep-picker label { display: flex; gap: 7px; align-items: center; font-size: 12px; }
+.dep-picker input { width: auto; }
+
+/* Settings */
+.settings { padding: 8px var(--pad-x) 40px; display: flex; flex-direction: column; gap: 18px; max-width: 880px; }
+.settings-block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+.settings-block h2 { font-size: 15px; margin-bottom: 10px; }
+.settings-block .rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.edit-row { display: flex; gap: 8px; align-items: center; }
+.edit-row input { flex: 1; }
+.edit-row input[type="color"] { flex: 0 0 44px; }
+.edit-row .read-cell { flex: 1; font-size: 13px; color: var(--muted); align-self: center; padding: 0 2px; }
+.edit-row.heads { padding: 0 2px 2px; }
+.edit-row.heads span { font-size: 11px; color: var(--muted); font-weight: 600; }
+.head-spacer { flex: 0 0 24px; }
+
+/* Gantt */
+/* Horizontaler Seitenabstand als margin (nicht padding): so klebt die sticky
+   Label-Spalte bündig am linken Scroll-Rand und „driftet" nicht erst um --pad-x. */
+.gantt-wrap { padding: 12px 0 30px; margin: 0 var(--pad-x); overflow-x: auto; overscroll-behavior-x: contain; }
+.gantt-foot { padding: 0 var(--pad-x) 5px; }
+.gantt-blockers { margin: 18px 0 0; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; box-sizing: border-box; }
+.gantt-blockers .panel-head { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.blocker-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.blocker-chip { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; background: var(--surface); border: 1px solid var(--line2); border-radius: 99px; padding: 3px 4px 3px 11px; }
+.gantt-blockers .panel-row { flex-wrap: wrap; }
+.gantt-blockers input[type="date"] { flex: 0 1 150px; }
+.gantt-blockers input[type="text"] { flex: 1 1 180px; }
+.field-cap { font-size: 11px; color: var(--muted); align-self: center; }
+.gantt-rows { position: relative; }
+.gantt-connectors { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 4; }
+.gantt-planned-end { position: absolute; top: 0; width: 0; border-left: 2px dashed var(--danger); opacity: .5; pointer-events: none; z-index: 3; }
+.gantt-today-line { position: absolute; top: 0; width: 0; border-left: 2px solid var(--accent); opacity: .6; pointer-events: none; z-index: 3; }
+.gantt { min-width: 960px; }
+.gantt-axis { display: flex; border-bottom: 2px solid var(--line); padding-bottom: 5px; position: sticky; top: 0; background: var(--bg); z-index: 2; }
+.gantt-label-col { width: 270px; min-width: 270px; font-size: 12px; font-weight: 700; color: var(--muted); position: sticky; left: 0; z-index: 6; background: var(--bg); }
+.gantt-timeline { flex: 1; display: flex; }
+.gantt-week { text-align: center; font-size: 10px; color: var(--muted); border-left: 1px solid var(--line); padding: 3px 0; }
+.gantt-group { margin: 14px 0 3px; font-size: 13px; font-weight: 700; border-radius: 6px; background: var(--surface2); display: flex; }
+/* Farbiger Rand + Text als sticky Einheit, damit beim Scrollen der linke Rand fix bleibt. */
+.gantt-group-label { position: sticky; left: 0; z-index: 5; padding: 6px 10px; border-left: 4px solid; border-radius: 6px 0 0 6px; background: var(--surface2); }
+.gantt-row { display: flex; align-items: center; height: 38px; border-bottom: 1px solid var(--line); }
+.gantt-row:hover { background: var(--surface2); }
+.gantt-row:hover .gantt-row-label { background: var(--surface2); }
+/* align-self: stretch -> Label-Box füllt die volle Zeilenhöhe, damit der opake
+   Hintergrund beim Scrollen den ganzen (24px hohen) Balken verdeckt und nichts oben/unten herausschaut. */
+.gantt-row-label { width: 270px; min-width: 270px; font-size: 12px; padding-right: 10px; cursor: pointer; position: sticky; left: 0; z-index: 5; background: var(--bg); align-self: stretch; display: flex; align-items: center; }
+.gantt-row-label .rl-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gantt-row-label:hover { color: var(--accent); }
+.gantt-row-label.done { text-decoration: line-through; color: var(--muted); }
+.gantt-row-label .rid { color: var(--muted); font-weight: 700; margin-right: 4px; }
+.gantt-bar-area { flex: 1; position: relative; height: 100%; }
+.gantt-bar { position: absolute; height: 24px; top: 7px; border-radius: 6px; min-width: 6px; cursor: pointer; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; }
+.gantt-bar.overflow { outline: 1.5px solid color-mix(in srgb, var(--danger) 55%, transparent); }
+.gantt-bar .bar-label { font-size: 10px; color: #fff; padding: 0 7px; line-height: 24px; white-space: nowrap; overflow: hidden; font-weight: 600; }
+/* Label rechts neben den Balken, wenn es darin nicht lesbar wäre (zu schmal). */
+.gantt-bar .bar-label--outside { position: absolute; left: 100%; top: 0; margin-left: 5px; padding: 0; color: var(--ink); overflow: visible; }
+/* "In Bearbeitung": pulsierender Akzent-Ring, komponierbar mit Overflow-Füllung. */
+.gantt-bar.wip { animation: lk-wip 3s ease-in-out infinite; }
+@keyframes lk-wip {
+  0%, 100% { box-shadow: var(--shadow), 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  50%      { box-shadow: var(--shadow), 0 0 0 5px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gantt-bar.wip { animation: none; box-shadow: var(--shadow), 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent); }
+}
+.blocked-layer { position: absolute; inset: 0; pointer-events: none; }
+.blocked-band { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, rgba(220,38,38,.12), rgba(220,38,38,.12) 5px, transparent 5px, transparent 10px); border-left: 1px solid rgba(220,38,38,.35); border-right: 1px solid rgba(220,38,38,.35); }
+.dep-badge { font-size: 9px; color: #fff; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-left: 5px; }
+.gantt-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 14px; font-size: 11px; color: var(--muted); }
+.gantt-legend .li { display: inline-flex; align-items: center; gap: 6px; }
+.gantt-legend .sw { width: 24px; height: 13px; border-radius: 4px; flex: 0 0 auto; background: var(--accent); }
+.gantt-legend .sw.done { opacity: .35; }
+.gantt-legend .sw.over { background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 7px, color-mix(in srgb, var(--danger) 60%, var(--accent)) 7px, color-mix(in srgb, var(--danger) 60%, var(--accent)) 10px); }
+.gantt-legend .sw.wip { animation: lk-wip 3s ease-in-out infinite; }
+.gantt-legend .sw.today { width: 0; height: 17px; border-radius: 0; background: none; border-left: 2px solid var(--accent); opacity: .6; }
+.gantt-legend .sw.end { width: 0; height: 17px; border-radius: 0; background: none; border-left: 2px dashed var(--danger); opacity: .6; }
+.gantt-legend .sw.dep { width: 0; height: 0; background: none; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid var(--muted); }
+@media (prefers-reduced-motion: reduce) {
+  .gantt-legend .sw.wip { animation: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent); }
+}
+.warn { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); padding: 8px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
+
+/* Fortschritt & Budget (Kanban-Kopf) */
+.progress-area { padding: 4px var(--pad-x) 12px; display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; }
+.prog-bar-wrap { flex: 1; min-width: 240px; }
+.prog-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.prog-bar { height: 14px; border-radius: 7px; background: var(--line); display: flex; overflow: hidden; }
+.prog-seg { height: 100%; transition: width .3s; }
+.prog-blocks { display: flex; flex-wrap: wrap; gap: 6px; }
+.prog-block { font-size: 11px; padding: 2px 9px; border-radius: 12px; border: 1px solid var(--line2); }
+.budget { width: 100%; display: flex; flex-wrap: wrap; gap: 16px; font-size: 11px; color: var(--muted); }
+.budget .over { color: var(--danger); font-weight: 600; }
+
+/* Export-Dropdown */
+.menu { position: relative; display: inline-block; }
+.menu > summary { list-style: none; cursor: pointer; user-select: none; }
+.menu > summary::-webkit-details-marker { display: none; }
+.menu-list { position: absolute; right: 0; top: calc(100% + 4px); background: var(--surface); border: 1px solid var(--line2); border-radius: 8px; box-shadow: var(--shadow); padding: 4px; min-width: 180px; z-index: 50; display: flex; flex-direction: column; gap: 2px; }
+.menu-item { text-align: left; border: 0; background: none; color: var(--ink); font: inherit; font-size: 12px; padding: 7px 10px; border-radius: 6px; cursor: pointer; }
+.menu-item:hover { background: var(--surface2); }
+
+/* Toast */
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); font-size: 12px; padding: 9px 16px; border-radius: 8px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 999; }
+.toast.show { opacity: 1; }
+
+/* Lerntage-Editor (Einstellungen) */
+.setting-hint { margin: 2px 0 6px; }
+.daypattern { display: flex; flex-direction: column; gap: 6px; }
+.day-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-cell { display: flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid var(--line2); border-radius: 8px; background: var(--bg); font-size: 12px; }
+.day-cell.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.day-cell input[type="checkbox"] { width: auto; flex: 0 0 auto; margin: 0; }
+.day-cell span { color: var(--muted); }
+.day-cell.on span { color: var(--ink); font-weight: 600; }
+.day-cell .day-hours { width: 52px; flex: 0 0 52px; padding: 3px 5px; }
+.day-sum { font-size: 11px; }
+.phase-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface2); }
+.phase-adv { margin-top: 8px; }
+.phase-adv summary { font-size: 12px; color: var(--accent); cursor: pointer; }
+.phase-adv .daypattern { margin-top: 6px; }
+
+/* Spalten-Umschalter im Detail (Touch-Ersatz fürs Drag&Drop) */
+.col-switch { display: flex; flex-wrap: wrap; gap: 6px; }
+.col-switch-btn {
+  flex: 1 1 auto; min-width: 90px;
+  border: 1px solid var(--line2); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 12px; font-weight: 600; padding: 8px 12px;
+  border-radius: 8px; cursor: pointer; transition: .12s;
+}
+.col-switch-btn:hover { border-color: var(--ink); }
+.col-switch-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); cursor: default; }
+
+/* Segmented-Toggle Gantt <-> Liste (Zeitplan-Tab) */
+.seg-toggle { display: inline-flex; gap: 0; border: 1px solid var(--line2); border-radius: 8px; overflow: hidden; }
+.seg-btn { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; padding: 7px 16px; cursor: pointer; }
+.seg-btn + .seg-btn { border-left: 1px solid var(--line2); }
+.seg-btn.on { background: var(--accent); color: #fff; }
+
+/* Zeitplan-Listenansicht */
+.sched-list-wrap { padding: 0 var(--pad-x) 30px; }
+/* Eine Grid-Tabelle für alle Gruppen; Zeilen docken per subgrid an diese Spalten
+   an -> Zeitraum/Phase/Nutzer/Stunden/Status fluchten über alle Zeilen hinweg. */
+.sched-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content max-content max-content max-content;
+  column-gap: 14px; row-gap: 6px; align-items: center;
+}
+.sched-table .gantt-group { grid-column: 1 / -1; }
+.sched-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center; padding: 8px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--muted);
+  border-radius: 8px; cursor: pointer; transition: .12s;
+}
+.sched-row:hover { border-color: var(--accent); }
+.sched-cell.title { font-size: 13px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sched-cell.title .rid { color: var(--muted); font-weight: 700; margin-right: 4px; }
+.sched-row.done .sched-cell.title { text-decoration: line-through; color: var(--muted); }
+.sched-cell.range { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.sched-cell.range.over { color: var(--danger); }
+.sched-cell.hours { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.sched-cell.people .avatars { margin: 0; }
+.sched-cell.status .pill { white-space: nowrap; }
+
+/* --- Tablet: Board einspaltig (bestehender Breakpoint) --- */
+@media (max-width: 900px) {
+  .board { grid-template-columns: 1fr; }
+}
+
+/* --- Smartphone --- */
+@media (max-width: 640px) {
+  :root { --pad-x: 12px; }
+  .app-header { flex-wrap: wrap; } /* Aside (Timer/Link) bricht unter den Titel um */
+  .app-header h1 { font-size: 18px; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { white-space: nowrap; }
+  .search { width: 100%; }
+  .chips { width: 100%; }
+  .filter-sep { display: none; }
+  /* Kein Spacer mehr -> die umgebrochenen Aktions-Buttons (Gantt/Liste, Demo,
+     Import, Export) stehen linksbündig statt rechts gedrängt. */
+  .spacer { display: none; }
+
+  /* Dialog vollflächig */
+  .dlg { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  .grid2 { grid-template-columns: 1fr; }
+
+  /* Eck-Verweise */
+  .fork-ribbon { display: none; }
+  .own-board-link { padding: 6px 11px; font-size: 11px; }
+
+  /* Liste: Zusatzspalten ausblenden -> nur Titel, Stunden, Status */
+  .sched-table { grid-template-columns: minmax(0, 1fr) max-content max-content; column-gap: 8px; }
+  .sched-cell.range, .sched-cell.phase, .sched-cell.people { display: none; }
+}
+
+/* --- Touch-Geräte: größere Tap-Targets --- */
+@media (pointer: coarse) {
+  .btn, .chip, .menu-item, .seg-btn, .col-switch-btn { min-height: 40px; }
+  .tab { min-height: 44px; }
+  .del, .icon-del { font-size: 20px; min-width: 36px; min-height: 36px; opacity: .7; }
+  input[type="checkbox"] { width: 20px; height: 20px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="application/json" id="board-data">{"version":2,"boardId":"board_lf10_kw47_microcloud_ci","updatedAt":"2026-11-13T10:03:38.789Z","config":{"title":"LF10 – Microcloud-Stack mit Git, GitHub und CI","subtitle":"Projektwoche KW47 · 12ITS · Hausaufgabe in KW46","dateMode":"kw","startDate":"2026-11-09","endDate":"2026-11-22","naming":{"scheme":"prefix-wbs","format":"{prefix} {wbs}"},"availableDays":[],"columns":[{"id":"todo","title":"Zu erledigen","color":""},{"id":"wip","title":"In Bearbeitung","color":""},{"id":"stuck","title":"Ich komme nicht weiter","color":""},{"id":"done","title":"Erledigt","color":""}],"categories":[{"id":"vor","label":"Vorbereitung und Abgabe","prefix":"ORG","color":"#64748B"},{"id":"git","label":"Git und GitHub","prefix":"GIT","color":"#2563EB"},{"id":"ci","label":"CI verstehen","prefix":"CI","color":"#059669"},{"id":"dev","label":"Branching und Apache","prefix":"DEV","color":"#7C3AED"},{"id":"zus","label":"Zusatz","prefix":"ZUS","color":"#D97706"}],"phases":[{"id":"ha","label":"KW46 – Hausaufgabe","start":"2026-11-13","end":"2026-11-15","hoursPerWeek":1,"availableDays":[],"color":"#64748B"},{"id":"kw47","label":"KW47 – Projektwoche","start":"2026-11-16","end":"2026-11-20","hoursPerWeek":6,"availableDays":[],"color":"#2563EB"}]},"people":[],"blockers":[],"tasks":[{"id":"ha","parentId":null,"wbs":"1","categoryId":"vor","phaseId":"ha","columnId":"todo","title":"Hausaufgabe: GitHub-Account mit 2FA vorbereiten","body":"## Ziel\nDein GitHub-Account ist **vor der Projektwoche** vollständig eingerichtet, damit du im Unterricht sofort starten kannst.\n\n## Warum?\nGitHub verlangt von allen, die Code hochladen, eine Zwei-Faktor-Authentifizierung (2FA). Die Einrichtung braucht E-Mail und Smartphone.\n\n## Anleitung\nSchritt für Schritt: `anleitung/00-hausaufgabe-github-account.md` (Link unten).","estH":0.5,"loggedM":0,"order":0,"deps":[],"assignees":[],"todos":[{"id":"ha_1","text":"Account angelegt (Plan: Free), E-Mail bestätigt","done":false},{"id":"ha_2","text":"2FA mit Authenticator-App aktiviert","done":false},{"id":"ha_3","text":"Recovery-Codes gesichert","done":false},{"id":"ha_4","text":"„Keep my email addresses private“ aktiviert, noreply-Adresse notiert","done":false},{"id":"ha_5","text":"Ab- und wieder angemeldet: 2FA funktioniert","done":false}],"resources":[{"label":"00 – Hausaufgabe GitHub-Account","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/00-hausaufgabe-github-account.md"},{"label":"GitHub Docs: 2FA konfigurieren","url":"https://docs.github.com/de/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication"}]},{"id":"p0","parentId":null,"wbs":"2","categoryId":"vor","phaseId":"kw47","columnId":"todo","title":"Projektstart: Ziel, Definition of Done, Weg wählen","body":"## Ziel\nDu kennst Ausgangssituation, Ziel und *Definition of Done* des Projekts und hast deinen Weg gewählt.\n\n| Weg | Material |\n|---|---|\n| Experte | nur die Kundenanforderungen im README |\n| Standard | Phasenübersicht im README + Hilfeseiten |\n| Basis | geführte Anleitungen im Ordner `anleitung/` |","estH":0.5,"loggedM":0,"order":1,"deps":["ha"],"assignees":[],"todos":[{"id":"p0_1","text":"Projektauftrag (README) gelesen","done":false},{"id":"p0_2","text":"Definition of Done verstanden","done":false},{"id":"p0_3","text":"Weg gewählt: Experte / Standard / Basis","done":false}],"resources":[{"label":"Projektauftrag (README)","url":"https://github.com/jbtls/microcloud-ci#readme"}]},{"id":"p1","parentId":null,"wbs":"1","categoryId":"git","phaseId":"kw47","columnId":"todo","title":"Git einrichten und SSH-Schlüssel bei GitHub hinterlegen","body":"## Ziel\nDein LXC-Container darf per SSH-Schlüssel in deine GitHub-Repositories pushen.\n\n## Fertig, wenn …\n`ssh -T git@github.com` antwortet mit `Hi benutzername! You've successfully authenticated …`\n\n## Achtung\nNur den **öffentlichen** Schlüssel (`~/.ssh/id_ed25519.pub`) bei GitHub eintragen. Hängt die Verbindung, Port 22 ist gesperrt → Fallback über Port 443 (siehe Anleitung).","estH":0.5,"loggedM":0,"order":2,"deps":["p0"],"assignees":[],"todos":[{"id":"p1_1","text":"git installiert, user.name / user.email (noreply) gesetzt","done":false},{"id":"p1_2","text":"Schlüsselpaar mit ssh-keygen -t ed25519 erzeugt","done":false},{"id":"p1_3","text":"Öffentlichen Schlüssel bei GitHub hinterlegt","done":false},{"id":"p1_4","text":"ssh -T git@github.com erfolgreich","done":false}],"resources":[{"label":"01 – SSH-Schlüssel","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/01-ssh-key.md"},{"label":"GitHub SSH-Fingerprints","url":"https://docs.github.com/de/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints"},{"label":"Typische Fehler","url":"https://github.com/jbtls/microcloud-ci/blob/main/hilfe/typische-fehler.md"}]},{"id":"p2","parentId":null,"wbs":"2","categoryId":"git","phaseId":"kw47","columnId":"todo","title":"Repo aus der Vorlage erzeugen und Stack einspielen","body":"## Ziel\nDein Stack aus Modul 4 liegt in deinem eigenen, **öffentlichen** Repo und wird automatisch getestet.\n\n## Erwartung\nDer CI-Lauf wird **rot**. Das ist Absicht. Finde heraus, in welchem Schritt und warum.","estH":0.75,"loggedM":0,"order":3,"deps":["p1"],"assignees":[],"todos":[{"id":"p2_1","text":"Repo „microcloud“ über „Use this template“ erzeugt (Public)","done":false},{"id":"p2_2","text":"Alter Stack gestoppt, ~/microcloud → ~/microcloud-alt","done":false},{"id":"p2_3","text":"Repo nach ~/microcloud geklont, compose.yml + html/ übernommen","done":false},{"id":"p2_4","text":"Erster Commit gepusht","done":false},{"id":"p2_5","text":"Roten Schritt und Fehlermeldung notiert und erklärt","done":false}],"resources":[{"label":"02 – Repo anlegen \u0026 Stack einspielen","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/02-repo-anlegen-und-stack-einspielen.md"},{"label":"CI-Log lesen","url":"https://github.com/jbtls/microcloud-ci/blob/main/hilfe/ci-log-lesen.md"},{"label":"Git-Spickzettel","url":"https://github.com/jbtls/microcloud-ci/blob/main/hilfe/git-spickzettel.md"}]},{"id":"p3","parentId":null,"wbs":"3","categoryId":"git","phaseId":"kw47","columnId":"todo","title":"Port 8085: der erste grüne Build","body":"## Ziel\nDer Stack veröffentlicht Port **8085**, läuft lokal und die CI ist **grün**.\n\n## Arbeitsablauf\nändern → lokal testen → `git add` / `git commit` → `git push` → CI prüft","estH":0.5,"loggedM":0,"order":4,"deps":["p2"],"assignees":[],"todos":[{"id":"p3_1","text":"Host-Port in compose.yml auf 8085 geändert","done":false},{"id":"p3_2","text":"Lokal getestet: curl http://localhost:8085","done":false},{"id":"p3_3","text":"Commit + Push","done":false},{"id":"p3_4","text":"CI grün, Abzeichen im README zeigt „passing“","done":false},{"id":"p3_5","text":"Webserver aus dem Steckbrief notiert","done":false}],"resources":[{"label":"03 – Port anpassen","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/03-port-anpassen-erster-gruener-build.md"}]},{"id":"p4","parentId":null,"wbs":"1","categoryId":"ci","phaseId":"kw47","columnId":"todo","title":"Den Workflow verstehen (Fragen A–C)","body":"## Ziel\nDu kannst jeden Schritt der Microcloud-CI erklären und die Fachbegriffe CI, Continuous Delivery und Continuous Deployment abgrenzen.\n\n## Material\n`.github/workflows/microcloud-ci.yml` und die Hilfeseite *Begriffe CI/CD*. Antworten ins Heft oder als `antworten.md` ins Repo.","estH":0.75,"loggedM":0,"order":5,"deps":["p3"],"assignees":[],"todos":[{"id":"p4_1","text":"Teil A: Aufbau (Events, Runner, Job, Steps, permissions)","done":false},{"id":"p4_2","text":"Teil B: Was wird wann geprüft?","done":false},{"id":"p4_3","text":"Teil C: CI vs. CD einordnen","done":false},{"id":"p4_4","text":"Antworten mit der Lösung verglichen","done":false}],"resources":[{"label":"04 – Workflow verstehen","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/04-workflow-verstehen.md"},{"label":"Begriffe CI/CD","url":"https://github.com/jbtls/microcloud-ci/blob/main/hilfe/begriffe-cicd.md"},{"label":"GitHub Docs: Actions verstehen","url":"https://docs.github.com/de/actions/get-started/understand-github-actions"}]},{"id":"p5","parentId":null,"wbs":"1","categoryId":"dev","phaseId":"kw47","columnId":"todo","title":"Branch dev: Umstieg von nginx auf Apache httpd","body":"## Ziel\nAuf dem Branch `dev` läuft **Apache httpd**, liefert deine Seite aus und die CI auf `dev` ist **grün**. `main` bleibt unverändert.\n\n## Erwartung\nDer erste Versuch (nur das Image tauschen) wird **rot**. Warum? Recherchiere den Web-Ordner (Document Root) des httpd-Images.","estH":1.5,"loggedM":0,"order":6,"deps":["p3"],"assignees":[],"todos":[{"id":"p5_1","text":"git switch -c dev","done":false},{"id":"p5_2","text":"Nur Image auf httpd:2.4-alpine geändert, gepusht: rot","done":false},{"id":"p5_3","text":"Ursache gefunden (diff im Log, curl lokal)","done":false},{"id":"p5_4","text":"Volume auf den Document Root von Apache angepasst","done":false},{"id":"p5_5","text":"CI auf dev grün, Steckbrief zeigt Apache","done":false}],"resources":[{"label":"05 – dev-Branch: Apache","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/05-dev-branch-apache.md"},{"label":"Docker Hub: httpd","url":"https://hub.docker.com/_/httpd"}]},{"id":"p6","parentId":null,"wbs":"2","categoryId":"dev","phaseId":"kw47","columnId":"todo","title":"Pull Request dev → main: erst grün, dann mergen","body":"## Ziel\nDie Apache-Umstellung ist per Pull Request nach `main` übernommen, **nachdem** der Check grün war. Dein LXC betreibt den neuen Stand von `main`.","estH":0.75,"loggedM":0,"order":7,"deps":["p5"],"assignees":[],"todos":[{"id":"p6_1","text":"Pull Request erstellt (base: main ← compare: dev)","done":false},{"id":"p6_2","text":"Checks abgewartet, grün","done":false},{"id":"p6_3","text":"Gemergt, CI auf main grün","done":false},{"id":"p6_4","text":"LXC: git switch main, git pull, docker compose up -d","done":false},{"id":"p6_5","text":"Reflexionsfragen beantwortet","done":false}],"resources":[{"label":"06 – Pull Request \u0026 Merge","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/06-pull-request-und-merge.md"},{"label":"GitHub Docs: Pull Requests","url":"https://docs.github.com/de/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests"}]},{"id":"abg","parentId":null,"wbs":"3","categoryId":"vor","phaseId":"kw47","columnId":"todo","title":"Abgabe: Definition of Done prüfen und in Moodle abgeben","body":"## Abgabe\n- Link zu deinem Repository\n- Link zu deinem gemergten Pull Request\n\nVorher alle Punkte der *Definition of Done* im README abhaken.","estH":0.25,"loggedM":0,"order":8,"deps":["p4","p6"],"assignees":[],"todos":[{"id":"abg_1","text":"Definition of Done vollständig erfüllt","done":false},{"id":"abg_2","text":"Repo-Link in Moodle abgegeben","done":false},{"id":"abg_3","text":"PR-Link in Moodle abgegeben","done":false}],"resources":[{"label":"Definition of Done","url":"https://github.com/jbtls/microcloud-ci#definition-of-done"}]},{"id":"z1","parentId":null,"wbs":"1","categoryId":"zus","phaseId":"kw47","columnId":"todo","title":"Zusatz A: Wiki-Projekt cicd-test (Release in die Registry)","body":"## Ziel\nEine Pipeline, die ein eigenes Image baut, testet und als Release in der GitHub Container Registry veröffentlicht (Continuous Delivery).\n\n## Hinweise\n- Fork **öffentlich** lassen\n- Im Fork im Tab *Actions* die Workflows freischalten\n- Bei Pull Requests als *base repository* den eigenen Fork wählen","estH":2,"loggedM":0,"order":9,"deps":["abg"],"assignees":[],"todos":[{"id":"z1_1","text":"Fork erstellt und Actions freigeschaltet","done":false},{"id":"z1_2","text":"Aufgaben 1–6 aus dem Wiki bearbeitet","done":false}],"resources":[{"label":"07 – Zusatz","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/07-zusatz-cicd-test.md"},{"label":"Wiki cicd-test","url":"https://github.com/jbtls/cicd-test/wiki"}]},{"id":"z2","parentId":null,"wbs":"2","categoryId":"zus","phaseId":"kw47","columnId":"todo","title":"Zusatz B: Eigener CI-Test für Uptime Kuma","body":"## Ziel\nDer Workflow prüft zusätzlich, ob Uptime Kuma auf Port 3001 antwortet. Entwickelt auf einem eigenen Branch und per Pull Request gemergt.","estH":1,"loggedM":0,"order":10,"deps":["abg"],"assignees":[],"todos":[{"id":"z2_1","text":"Branch kuma-test angelegt","done":false},{"id":"z2_2","text":"Workflow um Start- und Prüfschritt erweitert","done":false},{"id":"z2_3","text":"CI grün, Pull Request gemergt","done":false}],"resources":[{"label":"07 – Zusatz","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/07-zusatz-cicd-test.md"}]},{"id":"z3","parentId":null,"wbs":"3","categoryId":"zus","phaseId":"kw47","columnId":"todo","title":"Zusatz C: Release v1.0.0 erstellen","body":"## Ziel\nDer fertige Stand ist mit dem Tag `v1.0.0` markiert und als GitHub-Release mit Beschreibung veröffentlicht.","estH":0.5,"loggedM":0,"order":11,"deps":["abg"],"assignees":[],"todos":[{"id":"z3_1","text":"Tag v1.0.0 gesetzt und gepusht","done":false},{"id":"z3_2","text":"Release mit Beschreibung veröffentlicht","done":false},{"id":"z3_3","text":"Unterschied Commit / Branch / Tag erklärt","done":false}],"resources":[{"label":"07 – Zusatz","url":"https://github.com/jbtls/microcloud-ci/blob/main/anleitung/07-zusatz-cicd-test.md"}]}]}</script>
+<script>"use strict";
+(function(){
+const __M_naming = (function(){
+// WBS-Benennung (Work Breakdown Structure, DIN 69901 / PMI).
+// Berechnet hierarchische Codes (1, 1.1, 1.2, 2 ...) je Kategorie aus
+// optionaler Eltern-Hierarchie (parentId) und der Sortierung (order).
+// Reine Logik, kein DOM — wird von App, Generator und Tests genutzt.
+
+/**
+ * Sortiert Geschwister-Aufgaben stabil nach `order`, dann Titel.
+ */
+function sortSiblings(tasks) {
+  return [...tasks].sort((a, b) => {
+    const oa = Number.isFinite(a.order) ? a.order : 0;
+    const ob = Number.isFinite(b.order) ? b.order : 0;
+    if (oa !== ob) return oa - ob;
+    return String(a.title || "").localeCompare(String(b.title || ""), "de");
+  });
+}
+
+/**
+ * Weist jeder Aufgabe in board.tasks einen `wbs`-String zu (mutiert die Tasks).
+ * Top-Ebene je Kategorie: 1,2,3 …; Kinder: 1.1,1.2 …
+ * Kategorie-Reihenfolge folgt config.categories; unbekannte Kategorien hinten.
+ * Gibt board zurück.
+ */
+function computeWbs(board) {
+  const tasks = board.tasks || [];
+  const catOrder = new Map((board.config?.categories || []).map((c, i) => [c.id, i]));
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+
+  // Kinder je Elternknoten sammeln (Wurzel = parentId fehlt/unbekannt).
+  const childrenOf = new Map(); // parentId|null -> [tasks]
+  for (const t of tasks) {
+    const parent = t.parentId && byId.has(t.parentId) ? t.parentId : null;
+    if (!childrenOf.has(parent)) childrenOf.set(parent, []);
+    childrenOf.get(parent).push(t);
+  }
+
+  // Wurzeln je Kategorie gruppieren und in Kategorie-Reihenfolge nummerieren.
+  const roots = childrenOf.get(null) || [];
+  const rootsByCat = new Map();
+  for (const t of roots) {
+    const cat = t.categoryId || "";
+    if (!rootsByCat.has(cat)) rootsByCat.set(cat, []);
+    rootsByCat.get(cat).push(t);
+  }
+
+  const assign = (task, code) => {
+    task.wbs = code;
+    const kids = sortSiblings(childrenOf.get(task.id) || []);
+    kids.forEach((kid, i) => assign(kid, `${code}.${i + 1}`));
+  };
+
+  const sortedCats = [...rootsByCat.keys()].sort((a, b) => {
+    const ia = catOrder.has(a) ? catOrder.get(a) : Infinity;
+    const ib = catOrder.has(b) ? catOrder.get(b) : Infinity;
+    if (ia !== ib) return ia - ib;
+    return String(a).localeCompare(String(b), "de");
+  });
+
+  for (const cat of sortedCats) {
+    sortSiblings(rootsByCat.get(cat)).forEach((t, i) => assign(t, String(i + 1)));
+  }
+  return board;
+}
+
+/**
+ * Liefert das Anzeige-Label einer Aufgabe gemäß config.naming.format.
+ * Tokens: {prefix} (Kategorie-Kürzel), {wbs}, {category} (Kategorie-Label), {title}.
+ */
+function formatLabel(task, board) {
+  const cat = (board.config?.categories || []).find((c) => c.id === task.categoryId);
+  const fmt = board.config?.naming?.format || "{prefix} {wbs}";
+  const tokens = {
+    prefix: cat?.prefix || "",
+    wbs: task.wbs || "",
+    category: cat?.label || "",
+    title: task.title || "",
+  };
+  return fmt
+    .replace(/\{(\w+)\}/g, (m, k) => (k in tokens ? tokens[k] : m))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+  return { computeWbs, formatLabel };
+})();
+
+const __M_model = (function(){
+  const { computeWbs } = __M_naming;
+// Datenmodell v2: Erzeugung, sicheres Parsen, Sanitisierung, Validierung,
+// Migration vom alten kanban-v3-Format. Reine Logik, kein DOM.
+//
+// Sicherheitsleitlinien:
+//  - JSON wird Prototype-Pollution-sicher geparst (__proto__/constructor/prototype).
+//  - URLs werden auf http(s)/mailto beschränkt.
+//  - Strings werden längenbegrenzt; unbekannte Felder verworfen.
+
+
+const SCHEMA_VERSION = 2;
+
+const LIMITS = {
+  title: 300,
+  subtitle: 300,
+  label: 120,
+  body: 50000,
+  url: 2000,
+  name: 120,
+  todoText: 500,
+  tasks: 2000,
+  arrayField: 200,
+};
+
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const URL_SCHEMES = /^(https?:|mailto:)/i;
+
+// ---------------------------------------------------------------- Hilfen ----
+
+let _counter = 0;
+/** Stabile, kollisionsarme ID. Nutzt crypto.randomUUID, wenn vorhanden. */
+function uid(prefix = "id") {
+  const g = typeof globalThis !== "undefined" ? globalThis : {};
+  if (g.crypto && typeof g.crypto.randomUUID === "function") {
+    return `${prefix}_${g.crypto.randomUUID()}`;
+  }
+  _counter += 1;
+  return `${prefix}_${Date.now().toString(36)}${_counter.toString(36)}`;
+}
+
+function clampStr(v, max) {
+  if (typeof v !== "string") return "";
+  return v.length > max ? v.slice(0, max) : v;
+}
+
+function num(v, fallback = 0) {
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Bereinigt ein Lerntage-Pattern: Array von { dow: 1..7, hours: >=0 }.
+ * dow = ISO-Wochentag (1=Mo … 7=So). Pro dow nur ein Eintrag (letzter gewinnt),
+ * Ergebnis nach dow sortiert. Liefert immer ein Array (ggf. leer).
+ */
+function sanitizeDayPattern(value) {
+  if (!Array.isArray(value)) return [];
+  const byDow = new Map();
+  for (const d of value.slice(0, 7)) {
+    const dow = Math.round(num(d?.dow, 0));
+    if (dow < 1 || dow > 7) continue;
+    byDow.set(dow, { dow, hours: Math.max(0, num(d?.hours, 0)) });
+  }
+  return [...byDow.values()].sort((a, b) => a.dow - b.dow);
+}
+
+/** Erlaubt nur sichere URL-Schemata; sonst leerer String. */
+function sanitizeUrl(value) {
+  if (typeof value !== "string") return "";
+  const v = value.trim();
+  if (!v) return "";
+  // Protokoll-relative URLs (//host, \\host) sind externe Ziele, kein relativer Pfad.
+  if (v.startsWith("//") || v.startsWith("\\")) return "";
+  if (v.startsWith("#") || v.startsWith("/") || v.startsWith("./") || v.startsWith("../")) {
+    return clampStr(v, LIMITS.url); // relative Pfade erlaubt
+  }
+  if (URL_SCHEMES.test(v)) return clampStr(v, LIMITS.url);
+  return "";
+}
+
+/**
+ * Prototype-Pollution-sicheres JSON.parse. Gefährliche Schlüssel werden verworfen.
+ * Wirft bei ungültigem JSON.
+ */
+function safeParse(text) {
+  return JSON.parse(text, (key, value) => {
+    if (DANGEROUS_KEYS.has(key)) return undefined;
+    return value;
+  });
+}
+
+/** Tiefe Bereinigung gefährlicher Schlüssel (für bereits geparste Objekte). */
+function stripDangerous(value) {
+  if (Array.isArray(value)) return value.map(stripDangerous);
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const k of Object.keys(value)) {
+      if (DANGEROUS_KEYS.has(k)) continue;
+      out[k] = stripDangerous(value[k]);
+    }
+    return out;
+  }
+  return value;
+}
+
+// ------------------------------------------------------------ Defaults ------
+
+function defaultColumns() {
+  return [
+    { id: "todo", title: "Zu erledigen" },
+    { id: "wip", title: "In Bearbeitung" },
+    { id: "done", title: "Erledigt" },
+  ];
+}
+
+/** Frisches, leeres v2-Board. */
+function createEmptyBoard() {
+  return {
+    version: SCHEMA_VERSION,
+    boardId: uid("board"),
+    updatedAt: new Date().toISOString(),
+    config: {
+      title: "Lern-Kanban",
+      subtitle: "",
+      dateMode: "kw",
+      startDate: "",
+      endDate: "",
+      naming: { scheme: "prefix-wbs", format: "{prefix} {wbs}" },
+      availableDays: [],
+      columns: defaultColumns(),
+      categories: [],
+      phases: [],
+    },
+    people: [],
+    blockers: [],
+    tasks: [],
+  };
+}
+
+// --------------------------------------------------------- Sanitisierung ----
+
+function sanitizeColumns(cols) {
+  const out = (Array.isArray(cols) ? cols : []).slice(0, LIMITS.arrayField).map((c) => ({
+    id: clampStr(c?.id, LIMITS.label) || uid("col"),
+    title: clampStr(c?.title, LIMITS.label),
+    color: clampStr(c?.color, LIMITS.label),
+  }));
+  return out.length ? out : defaultColumns();
+}
+
+function sanitizeCategory(c) {
+  return {
+    id: clampStr(c?.id, LIMITS.label) || uid("cat"),
+    label: clampStr(c?.label, LIMITS.label),
+    prefix: clampStr(c?.prefix, LIMITS.label),
+    color: clampStr(c?.color, LIMITS.label),
+  };
+}
+
+function sanitizePhase(p) {
+  return {
+    id: clampStr(p?.id, LIMITS.label) || uid("phase"),
+    label: clampStr(p?.label, LIMITS.label),
+    start: clampStr(p?.start, LIMITS.label),
+    end: clampStr(p?.end, LIMITS.label),
+    hoursPerWeek: num(p?.hoursPerWeek, 0),
+    availableDays: sanitizeDayPattern(p?.availableDays),
+    color: clampStr(p?.color, LIMITS.label),
+  };
+}
+
+function sanitizePerson(p) {
+  return {
+    id: clampStr(p?.id, LIMITS.label) || uid("p"),
+    name: clampStr(p?.name, LIMITS.name),
+    color: clampStr(p?.color, LIMITS.label),
+  };
+}
+
+function sanitizeBlocker(b) {
+  return {
+    id: clampStr(b?.id, LIMITS.label) || uid("blk"),
+    label: clampStr(b?.label, LIMITS.label),
+    start: clampStr(b?.start, LIMITS.label),
+    end: clampStr(b?.end, LIMITS.label),
+  };
+}
+
+function sanitizeTodo(t) {
+  return {
+    id: clampStr(t?.id, LIMITS.label) || uid("todo"),
+    text: clampStr(t?.text, LIMITS.todoText),
+    done: !!t?.done,
+  };
+}
+
+function sanitizeResource(r) {
+  return {
+    label: clampStr(r?.label, LIMITS.label),
+    url: sanitizeUrl(r?.url),
+  };
+}
+
+function sanitizeTask(t) {
+  const arr = (v) => (Array.isArray(v) ? v.slice(0, LIMITS.arrayField) : []);
+  return {
+    id: clampStr(t?.id, LIMITS.label) || uid("t"),
+    parentId: t?.parentId ? clampStr(t.parentId, LIMITS.label) : null,
+    wbs: clampStr(t?.wbs, LIMITS.label),
+    categoryId: clampStr(t?.categoryId, LIMITS.label),
+    phaseId: clampStr(t?.phaseId, LIMITS.label),
+    columnId: clampStr(t?.columnId, LIMITS.label),
+    title: clampStr(t?.title, LIMITS.title),
+    body: clampStr(t?.body, LIMITS.body),
+    estH: Math.max(0, num(t?.estH, 0)),
+    loggedM: Math.max(0, num(t?.loggedM, 0)),
+    order: num(t?.order, 0),
+    deps: arr(t?.deps).map((d) => clampStr(d, LIMITS.label)).filter(Boolean),
+    assignees: arr(t?.assignees).map((a) => clampStr(a, LIMITS.label)).filter(Boolean),
+    todos: arr(t?.todos).map(sanitizeTodo),
+    resources: arr(t?.resources).map(sanitizeResource),
+  };
+}
+
+/**
+ * Bereinigt ein (bereits als v2 strukturiertes) Board vollständig:
+ * gefährliche Schlüssel entfernen, Felder begrenzen, Referenzen prüfen.
+ */
+function sanitizeBoard(input) {
+  const raw = stripDangerous(input) || {};
+  const base = createEmptyBoard();
+  const cfg = raw.config || {};
+
+  const board = {
+    version: SCHEMA_VERSION,
+    boardId: clampStr(raw.boardId, LIMITS.label) || base.boardId,
+    updatedAt: clampStr(raw.updatedAt, LIMITS.label) || base.updatedAt,
+    config: {
+      title: clampStr(cfg.title, LIMITS.title) || base.config.title,
+      subtitle: clampStr(cfg.subtitle, LIMITS.subtitle),
+      dateMode: cfg.dateMode === "date" ? "date" : "kw",
+      startDate: clampStr(cfg.startDate, LIMITS.label),
+      endDate: clampStr(cfg.endDate, LIMITS.label),
+      naming: {
+        scheme: clampStr(cfg.naming?.scheme, LIMITS.label) || "prefix-wbs",
+        format: clampStr(cfg.naming?.format, LIMITS.label) || "{prefix} {wbs}",
+      },
+      availableDays: sanitizeDayPattern(cfg.availableDays),
+      columns: sanitizeColumns(cfg.columns),
+      categories: (Array.isArray(cfg.categories) ? cfg.categories : [])
+        .slice(0, LIMITS.arrayField)
+        .map(sanitizeCategory),
+      phases: (Array.isArray(cfg.phases) ? cfg.phases : [])
+        .slice(0, LIMITS.arrayField)
+        .map(sanitizePhase),
+    },
+    people: (Array.isArray(raw.people) ? raw.people : [])
+      .slice(0, LIMITS.arrayField)
+      .map(sanitizePerson),
+    blockers: (Array.isArray(raw.blockers) ? raw.blockers : [])
+      .slice(0, LIMITS.arrayField)
+      .map(sanitizeBlocker),
+    tasks: (Array.isArray(raw.tasks) ? raw.tasks : [])
+      .slice(0, LIMITS.tasks)
+      .map(sanitizeTask),
+  };
+
+  // Referenzielle Integrität: nur gültige Spalten/Kategorien/Phasen/Deps/Personen.
+  const colIds = new Set(board.config.columns.map((c) => c.id));
+  const catIds = new Set(board.config.categories.map((c) => c.id));
+  const phaseIds = new Set(board.config.phases.map((p) => p.id));
+  const personIds = new Set(board.people.map((p) => p.id));
+  const taskIds = new Set(board.tasks.map((t) => t.id));
+  const fallbackCol = board.config.columns[0].id;
+
+  for (const t of board.tasks) {
+    if (!colIds.has(t.columnId)) t.columnId = fallbackCol;
+    if (t.categoryId && !catIds.has(t.categoryId)) t.categoryId = "";
+    if (t.phaseId && !phaseIds.has(t.phaseId)) t.phaseId = "";
+    if (t.parentId && !taskIds.has(t.parentId)) t.parentId = null;
+    t.deps = [...new Set(t.deps)].filter((d) => taskIds.has(d) && d !== t.id);
+    t.assignees = [...new Set(t.assignees)].filter((a) => personIds.has(a));
+  }
+
+  computeWbs(board);
+  return board;
+}
+
+// ------------------------------------------------------------ Validierung ---
+
+/** Strukturprüfung. Liefert { ok, errors }. */
+function validateBoard(board) {
+  const errors = [];
+  if (!board || typeof board !== "object") errors.push("Board ist kein Objekt.");
+  else {
+    if (!Array.isArray(board.tasks)) errors.push("tasks fehlt oder ist kein Array.");
+    if (!board.config || typeof board.config !== "object") errors.push("config fehlt.");
+    else if (!Array.isArray(board.config.columns) || board.config.columns.length === 0)
+      errors.push("config.columns fehlt oder ist leer.");
+    if (board.tasks && board.tasks.length > LIMITS.tasks)
+      errors.push(`Zu viele Aufgaben (>${LIMITS.tasks}).`);
+  }
+  return { ok: errors.length === 0, errors };
+}
+
+// -------------------------------------------------------------- Migration ---
+
+const OLD_COL_MAP = { 11: "todo", 12: "wip", 13: "done" };
+const OLD_BLOCK_COLORS = {
+  BS2: "#2563EB", BS3: "#059669", BS4: "#D97706", "BS5/6": "#9333EA", BS8: "#DC2626",
+};
+const OLD_PHASE_DEFAULTS = {
+  Ferien: { hoursPerWeek: 8 },
+  Ferienende: { hoursPerWeek: 8 },
+  Schulzeit: { hoursPerWeek: 4 },
+  Herbstferien: { hoursPerWeek: 16 },
+  laufend: { hoursPerWeek: 0.5 },
+};
+
+function slug(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || uid("x");
+}
+
+/** Erkennt das alte kanban-v3-Format (items/data/list). */
+function isLegacyFormat(raw) {
+  return !!raw && typeof raw === "object" && raw.items && raw.data && !raw.tasks;
+}
+
+/** Migriert das alte Format zu v2. */
+function migrateLegacy(raw) {
+  const board = createEmptyBoard();
+  const items = raw.items || {};
+  const values = Object.values(items);
+
+  // Kategorien aus distinct blocks.
+  const blocks = [...new Set(values.map((v) => v.block).filter(Boolean))];
+  const catByBlock = new Map();
+  board.config.categories = blocks.map((b) => {
+    const cat = { id: slug(b), label: b, prefix: b, color: OLD_BLOCK_COLORS[b] || "#6b7280" };
+    catByBlock.set(b, cat.id);
+    return cat;
+  });
+
+  // Phasen aus distinct phases.
+  const phases = [...new Set(values.map((v) => v.phase).filter(Boolean))];
+  const phaseByName = new Map();
+  board.config.phases = phases.map((p) => {
+    const d = OLD_PHASE_DEFAULTS[p] || { hoursPerWeek: 4 };
+    const ph = { id: slug(p), label: p, start: "", end: "", hoursPerWeek: d.hoursPerWeek, color: "" };
+    phaseByName.set(p, ph.id);
+    return ph;
+  });
+
+  // Spalte je altem Item ermitteln.
+  const colOfItem = new Map();
+  for (const col of Object.values(raw.data || {})) {
+    const newCol = OLD_COL_MAP[col.id] || "todo";
+    for (const itemId of col.item || []) colOfItem.set(String(itemId), newCol);
+  }
+
+  // cid -> neue id Abbildung (für Dependency-Auflösung).
+  const idByCid = new Map();
+  const tasks = values.map((v, i) => {
+    const id = uid("t");
+    if (v.cid) idByCid.set(v.cid, id);
+    return { _old: v, id, order: i };
+  });
+
+  board.tasks = tasks.map(({ _old: v, id, order }) => ({
+    id,
+    parentId: null,
+    wbs: "",
+    legacyCid: v.cid || "",
+    categoryId: catByBlock.get(v.block) || "",
+    phaseId: phaseByName.get(v.phase) || "",
+    columnId: colOfItem.get(String(v.id)) || "todo",
+    title: v.title || "",
+    body: v.body || "",
+    estH: num(v.estH, 0),
+    loggedM: num(v.loggedM, 0),
+    order,
+    deps: (v.deps || []).map((cid) => idByCid.get(cid)).filter(Boolean),
+    assignees: [],
+    todos: [],
+    resources: [],
+  }));
+
+  return board;
+}
+
+/**
+ * Nimmt ein beliebiges geparstes Objekt und liefert ein sauberes, validiertes
+ * v2-Board. Erkennt Alt-Format automatisch. Wirft bei unbrauchbarer Struktur.
+ */
+function normalizeBoard(raw) {
+  let candidate;
+  if (isLegacyFormat(raw)) candidate = migrateLegacy(raw);
+  else candidate = raw;
+
+  const board = sanitizeBoard(candidate);
+  const { ok, errors } = validateBoard(board);
+  if (!ok) throw new Error("Ungültiges Board: " + errors.join(" "));
+  board.updatedAt = new Date().toISOString();
+  return board;
+}
+
+/** Parst JSON-Text sicher und normalisiert zu v2. */
+function parseBoard(text) {
+  const raw = safeParse(text);
+  return normalizeBoard(raw);
+}
+
+  return { SCHEMA_VERSION, uid, sanitizeUrl, safeParse, defaultColumns, createEmptyBoard, sanitizeBoard, validateBoard, isLegacyFormat, migrateLegacy, normalizeBoard, parseBoard };
+})();
+
+const __M_markdown = (function(){
+  const { sanitizeUrl } = __M_model;
+// Schlanker, XSS-sicherer Markdown->HTML-Renderer (kein DOM, keine Abhängigkeit
+// außer der URL-Sanitisierung). Whitelist-Ansatz: zuerst escapen, dann nur
+// kontrollierte Tags erzeugen. Unterstützt Überschriften, Fett/Kursiv/Code,
+// Links (nur sichere Schemata), Listen, Task-Lists, Blockquotes, GFM-Tabellen.
+
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Inline-Formatierung auf bereits escaptem Text. */
+function inline(text) {
+  let s = text;
+  // Code zuerst (schützt Inhalt vor weiterer Ersetzung ist hier vereinfacht ok).
+  s = s.replace(/`([^`]+)`/g, (m, c) => `<code>${c}</code>`);
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/(^|[^_])_([^_]+)_/g, "$1<em>$2</em>");
+  // Links: [text](url) — URL streng prüfen.
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
+    const safe = sanitizeUrl(url.replace(/&amp;/g, "&"));
+    if (!safe) return label; // unsicher -> nur Text
+    return `<a href="${esc(safe)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  });
+  return s;
+}
+
+function isTableSep(line) {
+  return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function splitRow(line) {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((c) => c.trim());
+}
+
+/**
+ * Rendert Markdown zu einem HTML-String. Sicher gegen HTML/Script-Injektion.
+ */
+function renderMarkdown(src) {
+  if (!src) return "";
+  const lines = esc(src).replace(/\r\n?/g, "\n").split("\n");
+  const out = [];
+  let i = 0;
+
+  const flushParagraph = (buf) => {
+    if (buf.length) out.push(`<p>${inline(buf.join("<br>"))}</p>`);
+    buf.length = 0;
+  };
+
+  let para = [];
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Leerzeile
+    if (/^\s*$/.test(line)) {
+      flushParagraph(para);
+      i += 1;
+      continue;
+    }
+
+    // Überschrift
+    const h = /^(#{1,3})\s+(.*)$/.exec(line);
+    if (h) {
+      flushParagraph(para);
+      const level = h[1].length;
+      out.push(`<h${level}>${inline(h[2])}</h${level}>`);
+      i += 1;
+      continue;
+    }
+
+    // Blockquote
+    if (/^&gt;\s?/.test(line)) {
+      flushParagraph(para);
+      const quote = [];
+      while (i < lines.length && /^&gt;\s?/.test(lines[i])) {
+        quote.push(lines[i].replace(/^&gt;\s?/, ""));
+        i += 1;
+      }
+      out.push(`<blockquote>${inline(quote.join("<br>"))}</blockquote>`);
+      continue;
+    }
+
+    // Tabelle (Kopf + Trennzeile)
+    if (line.includes("|") && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+      flushParagraph(para);
+      const head = splitRow(line);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && lines[i].includes("|") && !/^\s*$/.test(lines[i])) {
+        rows.push(splitRow(lines[i]));
+        i += 1;
+      }
+      const th = head.map((c) => `<th>${inline(c)}</th>`).join("");
+      const body = rows
+        .map((r) => `<tr>${head.map((_, c) => `<td>${inline(r[c] || "")}</td>`).join("")}</tr>`)
+        .join("");
+      out.push(`<table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`);
+      continue;
+    }
+
+    // Ungeordnete Liste / Task-Liste
+    if (/^\s*[*-]\s+/.test(line)) {
+      flushParagraph(para);
+      const items = [];
+      while (i < lines.length && /^\s*[*-]\s+/.test(lines[i])) {
+        let item = lines[i].replace(/^\s*[*-]\s+/, "");
+        const task = /^\[( |x|X)\]\s+(.*)$/.exec(item);
+        if (task) {
+          const checked = task[1].toLowerCase() === "x";
+          items.push(
+            `<li class="md-task"><span class="md-check">${checked ? "☑" : "☐"}</span> ${inline(task[2])}</li>`
+          );
+        } else {
+          items.push(`<li>${inline(item)}</li>`);
+        }
+        i += 1;
+      }
+      out.push(`<ul>${items.join("")}</ul>`);
+      continue;
+    }
+
+    // Geordnete Liste
+    if (/^\s*\d+\.\s+/.test(line)) {
+      flushParagraph(para);
+      const items = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items.push(`<li>${inline(lines[i].replace(/^\s*\d+\.\s+/, ""))}</li>`);
+        i += 1;
+      }
+      out.push(`<ol>${items.join("")}</ol>`);
+      continue;
+    }
+
+    // Absatztext
+    para.push(line);
+    i += 1;
+  }
+  flushParagraph(para);
+  return out.join("\n");
+}
+
+  return { renderMarkdown };
+})();
+
+const __M_schedule = (function(){
+// Gantt-Scheduler. Reine Logik, kein DOM.
+// Forward-Scheduling mit:
+//  - Abhängigkeiten (deps per Task-ID), inkl. Zyklus-Erkennung
+//  - sequentiellem Cursor je Kategorie+Phase (keine Überlappung im Block)
+//  - Zeit-Overflow: effektive Stunden = max(estH, loggedM/60) -> Balken länger,
+//    Abhängige verschieben sich kaskadierend nach hinten
+//  - Blockern (gesperrte Datumsbereiche = 0 Kapazität -> Aufgabe verlängert sich)
+//  - Datums-Achse über Tagesoffsets ab config.startDate
+
+const MS_PER_DAY = 86400000;
+const EPS = 1e-6;
+
+/** ISO-Kalenderwoche eines Datums (1–53). */
+function isoWeek(d) {
+  const t = new Date(d.valueOf());
+  t.setUTCDate(t.getUTCDate() + 3 - ((t.getUTCDay() + 6) % 7));
+  const y = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((t - y) / MS_PER_DAY - 3 + ((y.getUTCDay() + 6) % 7)) / 7);
+}
+
+/** UTC-Datum als "TT.MM". */
+function dmLabel(dt) {
+  return `${String(dt.getUTCDate()).padStart(2, "0")}.${String(dt.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** "YYYY-MM-DD" -> UTC-Date (Mitternacht) oder null. */
+function parseDate(str) {
+  if (typeof str !== "string") return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(str.trim());
+  if (!m) return null;
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+}
+
+/** ISO-Wochentag eines UTC-Datums: 1=Mo … 7=So. */
+function isoDow(date) {
+  return ((date.getUTCDay() + 6) % 7) + 1;
+}
+
+/**
+ * Effektives Lerntage-Pattern einer Phase: phasenspezifisch, sonst global,
+ * sonst null (Legacy = hoursPerWeek gleichmäßig über 7 Tage).
+ */
+function resolvePattern(phase, cfg) {
+  if (phase?.availableDays?.length) return phase.availableDays;
+  if (cfg?.availableDays?.length) return cfg.availableDays;
+  return null;
+}
+
+/** Pattern-Array -> Map dow -> Stunden. */
+function patternMap(pattern) {
+  return new Map((pattern || []).map((d) => [d.dow, d.hours]));
+}
+
+/**
+ * Verfügbare Lernstunden einer Phase, dynamisch aus Datumsbereich und Kapazität,
+ * abzüglich gesperrter Tage (Stundenausfall). Mit Lerntage-Pattern = Summe der
+ * Tageskapazitäten; ohne Pattern = Std./Woche × (Phasentage / 7). 0 ohne Bereich.
+ */
+function phaseBudgetHours(phase, board) {
+  const s = parseDate(phase?.start);
+  const e = parseDate(phase?.end);
+  if (!s || !e || e.getTime() < s.getTime()) return 0;
+  const pattern = resolvePattern(phase, board?.config);
+
+  // Gesperrte Tage als Set absoluter Datums-Millis (Mitternacht).
+  const blocked = new Set();
+  for (const b of board?.blockers || []) {
+    const bs = parseDate(b.start);
+    const be = parseDate(b.end) || bs;
+    if (!bs) continue;
+    for (let t = bs.getTime(); t <= be.getTime(); t += MS_PER_DAY) blocked.add(t);
+  }
+
+  if (pattern) {
+    const pm = patternMap(pattern);
+    let hours = 0;
+    for (let t = s.getTime(); t <= e.getTime(); t += MS_PER_DAY) {
+      if (blocked.has(t)) continue;
+      hours += pm.get(isoDow(new Date(t))) || 0;
+    }
+    return hours;
+  }
+
+  const hpw = phase?.hoursPerWeek || 0;
+  if (hpw <= 0) return 0;
+  let days = Math.round((e.getTime() - s.getTime()) / MS_PER_DAY) + 1; // inklusive
+  for (const b of board?.blockers || []) {
+    const bs = parseDate(b.start);
+    const be = parseDate(b.end) || bs;
+    if (!bs) continue;
+    const from = Math.max(s.getTime(), bs.getTime());
+    const to = Math.min(e.getTime(), be.getTime());
+    if (to >= from) days -= Math.round((to - from) / MS_PER_DAY) + 1;
+  }
+  return Math.max(0, days) / 7 * hpw;
+}
+
+function effectiveHours(task, isDone) {
+  const logged = (task.loggedM || 0) / 60;
+  const est = task.estH || 0;
+  if (isDone) return Math.max(est, logged) || est;
+  return Math.max(est, logged);
+}
+
+function daysForHours(hours, hoursPerWeek) {
+  if (!hoursPerWeek || hoursPerWeek <= 0) return Math.max(2, Math.round(hours));
+  return Math.max(1, Math.ceil(hours / (hoursPerWeek / 7)));
+}
+
+/**
+ * @param {object} board v2-Board
+ * @returns {{tasks: Object, t0: string, totalDays: number, blocked: number[], hasCycle: boolean}}
+ */
+function schedule(board) {
+  const cfg = board.config || {};
+  const tasks = board.tasks || [];
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const phaseById = new Map((cfg.phases || []).map((p) => [p.id, p]));
+
+  // Zeitachse: T0 = startDate, sonst frühestes Phasen-/Default-Datum.
+  let t0 = parseDate(cfg.startDate);
+  const phaseStarts = (cfg.phases || []).map((p) => parseDate(p.start)).filter(Boolean);
+  if (!t0 && phaseStarts.length) t0 = new Date(Math.min(...phaseStarts.map((d) => d.getTime())));
+  if (!t0) t0 = new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1));
+
+  const dateToDays = (d) => Math.round((d.getTime() - t0.getTime()) / MS_PER_DAY);
+
+  let totalDays = 0;
+  const endDate = parseDate(cfg.endDate);
+  const phaseEnds = (cfg.phases || []).map((p) => parseDate(p.end)).filter(Boolean);
+  if (endDate) totalDays = dateToDays(endDate);
+  else if (phaseEnds.length) totalDays = Math.max(...phaseEnds.map(dateToDays));
+  totalDays = Math.max(totalDays, 1);
+  const plannedDays = totalDays; // geplantes Ende laut Konfiguration (vor Overflow-Erweiterung)
+
+  // Gesperrte Tage als Set von Offsets.
+  const blockedSet = new Set();
+  for (const b of board.blockers || []) {
+    const s = parseDate(b.start);
+    const e = parseDate(b.end) || s;
+    if (!s) continue;
+    for (let d = dateToDays(s); d <= dateToDays(e); d += 1) {
+      if (d >= 0) blockedSet.add(d);
+    }
+  }
+  const isBlocked = (day) => blockedSet.has(day);
+
+  /** Platziert eine Dauer ab earliest, überspringt gesperrte Tage. */
+  function place(earliest, dur) {
+    let day = Math.max(0, earliest);
+    while (isBlocked(day)) day += 1;
+    const start = day;
+    let counted = 1;
+    while (counted < dur) {
+      day += 1;
+      if (!isBlocked(day)) counted += 1;
+    }
+    return { startDay: start, endDay: day };
+  }
+
+  /** Tageskapazität (Stunden) eines Offsets unter einem Pattern; 0 bei Sperre. */
+  function capAt(dayOffset, pm) {
+    if (dayOffset < 0 || isBlocked(dayOffset)) return 0;
+    const date = new Date(t0.getTime() + dayOffset * MS_PER_DAY);
+    return pm.get(isoDow(date)) || 0;
+  }
+
+  // Sicherheitsobergrenze gegen Endlosschleifen bei degenerierten Patterns.
+  const WALK_GUARD = totalDays + 366 * 5;
+
+  /**
+   * Verbraucht `hours` Stunden tageweise ab `cursor` ({day, used}) gegen die
+   * Tageskapazität des Patterns. Teilt einen Tag stundengenau (used = Reststunden).
+   * Liefert echte Kalender-Offsets { startDay, endDay, used }.
+   */
+  function placeHours(cursor, hours, pm) {
+    const startSearch = Math.max(0, cursor.day);
+    const usedHere = (d) => (d === cursor.day ? cursor.used : 0);
+
+    if (hours <= EPS) {
+      let d = startSearch, n = 0;
+      while (n <= WALK_GUARD && capAt(d, pm) - usedHere(d) <= EPS) { d += 1; n += 1; }
+      return { startDay: d, endDay: d, used: usedHere(d) };
+    }
+
+    let remaining = hours, day = startSearch;
+    let startDay = null, endDay = null, lastUsed = 0, n = 0;
+    while (remaining > EPS && n <= WALK_GUARD) {
+      const already = usedHere(day);
+      const avail = capAt(day, pm) - already;
+      if (avail > EPS) {
+        if (startDay === null) startDay = day;
+        const take = Math.min(avail, remaining);
+        remaining -= take;
+        endDay = day;
+        lastUsed = already + take;
+        if (remaining > EPS) day += 1;
+      } else {
+        day += 1;
+      }
+      n += 1;
+    }
+    if (startDay === null) { startDay = endDay = startSearch; lastUsed = 0; }
+    return { startDay, endDay, used: lastUsed };
+  }
+
+  const doneCol = (() => {
+    const cols = cfg.columns || [];
+    const last = cols[cols.length - 1];
+    return last ? last.id : "done";
+  })();
+
+  const result = {};
+  const catCursor = new Map(); // categoryId|phaseId -> nächster freier Tag
+  let hasCycle = false;
+  const visiting = new Set();
+
+  function scheduleTask(task) {
+    if (result[task.id]) return result[task.id];
+    if (visiting.has(task.id)) {
+      hasCycle = true;
+      return { startDay: 0, endDay: 0, dur: 0, overflow: false };
+    }
+    visiting.add(task.id);
+
+    const phase = phaseById.get(task.phaseId);
+    const phStart = phase && parseDate(phase.start) ? dateToDays(parseDate(phase.start)) : 0;
+    const hpw = phase ? phase.hoursPerWeek : 0;
+    const pattern = resolvePattern(phase, cfg);
+    const isDone = task.columnId === doneCol;
+
+    let earliest = phStart;
+    for (const depId of task.deps || []) {
+      const dep = byId.get(depId);
+      if (!dep) continue;
+      const ds = scheduleTask(dep);
+      if (ds.endDay + 1 > earliest) earliest = ds.endDay + 1;
+    }
+
+    const hours = effectiveHours(task, isDone);
+    const overflow = (task.estH || 0) > 0 && task.loggedM / 60 > task.estH;
+
+    const ck = `${task.categoryId}|${task.phaseId}`;
+    const cursor = catCursor.get(ck); // { day, used } oder undefined
+
+    let startDay, endDay, dur;
+    if (pattern) {
+      const pm = patternMap(pattern);
+      const start = cursor && cursor.day >= earliest ? cursor : { day: earliest, used: 0 };
+      const r = placeHours(start, hours, pm);
+      startDay = r.startDay; endDay = r.endDay;
+      catCursor.set(ck, { day: endDay, used: r.used });
+      dur = endDay - startDay + 1;
+    } else {
+      let e2 = earliest;
+      if (cursor && cursor.day > e2) e2 = cursor.day;
+      dur = daysForHours(hours, hpw);
+      const placed = place(e2, dur);
+      startDay = placed.startDay; endDay = placed.endDay;
+      catCursor.set(ck, { day: endDay + 1, used: 0 });
+    }
+
+    visiting.delete(task.id);
+    result[task.id] = { startDay, endDay, dur, overflow };
+    return result[task.id];
+  }
+
+  // Stabile Reihenfolge: nach Phase, dann WBS/Order.
+  const phaseOrder = new Map((cfg.phases || []).map((p, i) => [p.id, i]));
+  const sorted = [...tasks].sort((a, b) => {
+    const pa = phaseOrder.has(a.phaseId) ? phaseOrder.get(a.phaseId) : 99;
+    const pb = phaseOrder.has(b.phaseId) ? phaseOrder.get(b.phaseId) : 99;
+    if (pa !== pb) return pa - pb;
+    return String(a.wbs || a.order).localeCompare(String(b.wbs || b.order), "de", { numeric: true });
+  });
+  sorted.forEach(scheduleTask);
+
+  // Achse bis zum tatsächlichen Ende aller Aufgaben verlängern: Balken, die über
+  // das geplante Ende hinauslaufen (Overflow/Abhängigkeiten), sollen den Zeitraum
+  // erweitern statt an den rechten Rand gequetscht zu werden. +1, weil die Balken-
+  // breite über dayToX(endDay + 1) (Tag nach Ende) berechnet wird.
+  for (const id in result) if (result[id].endDay + 1 > totalDays) totalDays = result[id].endDay + 1;
+
+  return {
+    tasks: result,
+    t0: t0.toISOString().slice(0, 10),
+    totalDays,
+    plannedDays,
+    blocked: [...blockedSet].sort((a, b) => a - b),
+    hasCycle,
+  };
+}
+
+/**
+ * Sortierte Tages-Offsets [0..totalDays], die in irgendeiner Phase ein Lerntag
+ * sind (Kapazität > 0, nicht gesperrt). Für die komprimierte Datums-Achse.
+ * Phasen ohne Pattern (Legacy) zählen jeden nicht gesperrten Tag im Bereich.
+ * Liefert null, wenn nirgends ein Lerntage-Pattern definiert ist (lineare Achse).
+ */
+function learningDayOffsets(board, sched) {
+  const cfg = board.config || {};
+  const hasAnyPattern = (cfg.availableDays?.length || 0) > 0
+    || (cfg.phases || []).some((p) => (p.availableDays?.length || 0) > 0);
+  if (!hasAnyPattern) return null;
+
+  const t0 = parseDate(sched.t0);
+  if (!t0) return null;
+  const total = Math.max(1, sched.totalDays);
+  const blocked = new Set(sched.blocked || []);
+  const dateToDays = (d) => Math.round((d.getTime() - t0.getTime()) / MS_PER_DAY);
+
+  const phases = (cfg.phases || []).map((p) => {
+    const s = parseDate(p.start);
+    const e = parseDate(p.end);
+    const pattern = resolvePattern(p, cfg);
+    return {
+      from: s ? dateToDays(s) : 0,
+      to: e ? dateToDays(e) : total,
+      pm: pattern ? patternMap(pattern) : null,
+    };
+  });
+
+  const maxTo = phases.length ? Math.max(...phases.map((p) => p.to)) : total;
+  // Spätester tatsächlich belegter Tag: nur bis hierhin wird der Rhythmus über das
+  // Phasenende hinaus fortgeführt (Overflow), nicht bis zu einem späten endDate.
+  let maxTaskEnd = 0;
+  for (const id in sched.tasks || {}) maxTaskEnd = Math.max(maxTaskEnd, sched.tasks[id].endDay || 0);
+
+  const days = [];
+  for (let d = 0; d <= total; d += 1) {
+    if (blocked.has(d)) continue;
+    const dow = isoDow(new Date(t0.getTime() + d * MS_PER_DAY));
+    let learning = false;
+    for (const ph of phases) {
+      if (d < ph.from || d > ph.to) continue;
+      if (ph.pm === null) { learning = true; break; }     // Legacy: jeder Tag
+      if ((ph.pm.get(dow) || 0) > 0) { learning = true; break; }
+    }
+    // Hinter dem letzten Phasenende, aber innerhalb einer verlängerten Aufgabe
+    // (Overflow): Rhythmus der Phasen fortführen -> echte Slots statt Quetschen.
+    if (!learning && d > maxTo && d <= maxTaskEnd) {
+      for (const ph of phases) {
+        if (ph.pm === null) { learning = true; break; }
+        if ((ph.pm.get(dow) || 0) > 0) { learning = true; break; }
+      }
+    }
+    if (learning) days.push(d);
+  }
+  return days;
+}
+
+  return { MS_PER_DAY, isoWeek, dmLabel, parseDate, resolvePattern, phaseBudgetHours, schedule, learningDayOffsets };
+})();
+
+const __M_serialize = (function(){
+// Geteilte Serialisierung der Board-Daten-Insel. Von Browser-Onepager-Export
+// und Node-Build gleichermaßen genutzt, damit beide identisch escapen.
+
+/**
+ * Escaped JSON-Text für die sichere Einbettung in <script type="application/json">.
+ * Verhindert <\/script>-Ausbruch; Ergebnis bleibt gültiges JSON (Unicode-Escapes).
+ */
+function escapeDataIsland(jsonText) {
+  return jsonText.replace(/[&<>\u2028\u2029]/g, (ch) =>
+    "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0"));
+}
+
+  return { escapeDataIsland };
+})();
+
+const __M_store = (function(){
+  const { normalizeBoard, createEmptyBoard, safeParse } = __M_model;
+  const { computeWbs } = __M_naming;
+// Zentraler Zustand + Persistenz (localStorage, je boardId namespaced).
+// Pub/Sub: Renderer abonnieren Änderungen. Reine Browser-Schicht.
+
+
+const KEY_PREFIX = "lernkanban:";
+
+function storageKey(boardId) {
+  return KEY_PREFIX + (boardId || "default");
+}
+
+const store = {
+  board: null,
+  view: "kanban",
+  scheduleView: "chart", // Zeitplan-Darstellung: "chart" (Gantt) | "list"
+  filters: { category: "all", phase: "all", q: "" },
+  timer: { taskId: null, start: null },
+  _subs: [],
+  _saveTimer: null,
+
+  subscribe(fn) {
+    this._subs.push(fn);
+  },
+  notify() {
+    for (const fn of this._subs) fn();
+  },
+
+  /** Liest eingebettetes Board, prüft localStorage-Override. */
+  init() {
+    let embedded = createEmptyBoard();
+    const el = document.getElementById("board-data");
+    if (el && el.textContent.trim()) {
+      try { embedded = normalizeBoard(safeParse(el.textContent)); } catch (e) { /* Default */ }
+    }
+
+    let board = embedded;
+    try {
+      const raw = localStorage.getItem(storageKey(embedded.boardId));
+      if (raw) board = normalizeBoard(safeParse(raw));
+    } catch (e) { /* defektes Storage ignorieren -> eingebettetes Board */ }
+
+    this.board = board;
+    this._loadTimer();
+    return board;
+  },
+
+  getBoard() { return this.board; },
+
+  /** Mutator anwenden, WBS neu berechnen, speichern, neu rendern. */
+  commit(mutator) {
+    mutator(this.board);
+    computeWbs(this.board);
+    this.board.updatedAt = new Date().toISOString();
+    this.save();
+    this.notify();
+  },
+
+  /** Verschiebt eine Aufgabe aus der ersten Spalte (To-do) in die erste mittlere
+   *  Spalte ("In Bearbeitung"). Mutiert das Board, ohne selbst zu committen. */
+  _moveToWip(b, taskId) {
+    const t = b.tasks.find((x) => x.id === taskId);
+    if (!t) return;
+    const cols = b.config.columns || [];
+    if (cols.length >= 3 && t.columnId === cols[0].id) t.columnId = cols[1].id;
+  },
+
+  /** Geloggte Minuten ändern (delta kann negativ sein). Sobald Zeit erfasst ist
+   *  (loggedM > 0), springt eine To-do-Aufgabe automatisch auf "In Bearbeitung". */
+  logTime(taskId, deltaMins) {
+    this.commit((b) => {
+      const t = b.tasks.find((x) => x.id === taskId);
+      if (!t) return;
+      t.loggedM = Math.max(0, (t.loggedM || 0) + deltaMins);
+      if (deltaMins > 0 && t.loggedM > 0) this._moveToWip(b, taskId);
+    });
+  },
+
+  /** Komplettes Board ersetzen (Import/Reset). */
+  replaceBoard(board) {
+    this.board = normalizeBoard(board);
+    this.save();
+    this.notify();
+  },
+
+  save() {
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(storageKey(this.board.boardId), JSON.stringify(this.board));
+      } catch (e) { /* Speicher voll/blockiert -> still ignorieren */ }
+    }, 150);
+  },
+
+  setView(v) { this.view = v; this.notify(); },
+  setScheduleView(v) { this.scheduleView = v; this.notify(); },
+  setFilter(patch) { Object.assign(this.filters, patch); this.notify(); },
+
+  // ----- Timer (separat persistiert, überlebt Reload) -----
+  _timerKey() { return storageKey(this.board.boardId) + ":timer"; },
+  _loadTimer() {
+    try {
+      const raw = localStorage.getItem(this._timerKey());
+      if (raw) this.timer = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  },
+  _saveTimerState() {
+    try {
+      if (this.timer.taskId) localStorage.setItem(this._timerKey(), JSON.stringify(this.timer));
+      else localStorage.removeItem(this._timerKey());
+    } catch (e) { /* ignore */ }
+  },
+  startTimer(taskId) {
+    if (this.timer.taskId) this.stopTimer();
+    this.timer = { taskId, start: Date.now() };
+    this._saveTimerState();
+    // Tracking gestartet -> Aufgabe gilt als "In Bearbeitung" (commit benachrichtigt).
+    this.commit((b) => this._moveToWip(b, taskId));
+  },
+  stopTimer() {
+    const { taskId, start } = this.timer;
+    if (taskId && start) {
+      const mins = Math.round((Date.now() - start) / 60000);
+      this.logTime(taskId, mins);
+    }
+    this.timer = { taskId: null, start: null };
+    this._saveTimerState();
+    this.notify();
+  },
+};
+
+  return { store };
+})();
+
+const __M_dom = (function(){
+// Kleiner DOM-Helfer. Vermeidet innerHTML für Nutzerinhalte (XSS-sicher) und
+// nutzt addEventListener (CSP-konform, keine Inline-Handler).
+
+/**
+ * h("div", {class:"x", onclick:fn, dataset:{id:1}, style:{color:"red"}}, ...children)
+ * children: Strings (-> Textknoten), Nodes, Arrays, null/false (ignoriert).
+ */
+function h(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") node.className = v;
+    else if (k === "dataset") for (const [dk, dv] of Object.entries(v)) node.dataset[dk] = dv;
+    else if (k === "style" && typeof v === "object") Object.assign(node.style, v);
+    else if (k === "html") node.innerHTML = v; // nur für bereits sanitisiertes HTML
+    else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+    else if (k in node && k !== "list") {
+      try { node[k] = v; } catch { node.setAttribute(k, v); }
+    } else node.setAttribute(k, v);
+  }
+  appendChildren(node, children);
+  return node;
+}
+
+function appendChildren(node, children) {
+  for (const c of children) {
+    if (c == null || c === false) continue;
+    if (Array.isArray(c)) appendChildren(node, c);
+    else if (c instanceof Node) node.appendChild(c);
+    else node.appendChild(document.createTextNode(String(c)));
+  }
+}
+
+function clear(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+  return node;
+}
+
+let _toastTimer = null;
+function toast(msg) {
+  let t = document.getElementById("toast");
+  if (!t) {
+    t = h("div", { id: "toast", class: "toast" });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove("show"), 1900);
+}
+
+  return { h, clear, toast };
+})();
+
+const __M_render_detail = (function(){
+  const { store } = __M_store;
+  const { h, clear, toast } = __M_dom;
+  const { renderMarkdown } = __M_markdown;
+  const { formatLabel } = __M_naming;
+  const { uid, sanitizeUrl } = __M_model;
+// Detail- und Bearbeiten-Dialog einer Aufgabe:
+// Markdown-Body, abhakbare Todos, Ressourcen, Verantwortliche (inkl. neuer
+// Person), Zeiterfassung (Timer/Minuten), Abhängigkeiten, Status.
+
+
+function dlg() {
+  let d = document.getElementById("dlg");
+  if (!d) { d = h("dialog", { id: "dlg", class: "dlg" }); document.body.appendChild(d); }
+  return d;
+}
+
+function task(id) { return store.getBoard().tasks.find((t) => t.id === id); }
+function cat(board, id) { return board.config.categories.find((c) => c.id === id); }
+
+function statusOf(board, t) {
+  const cols = board.config.columns;
+  if (t.columnId === cols[cols.length - 1].id) return { label: "Erledigt", cls: "done" };
+  if (cols.length > 2 && t.columnId === cols[1].id) return { label: "In Bearbeitung", cls: "wip" };
+  return { label: "Offen", cls: "todo" };
+}
+
+// ----------------------------------------------------------- Detailansicht --
+
+function openDetail(id) {
+  const board = store.getBoard();
+  const t = task(id);
+  if (!t) return;
+  const c = cat(board, t.categoryId);
+  const color = c?.color || "var(--muted)";
+  const st = statusOf(board, t);
+
+  const d = dlg();
+  clear(d);
+
+  d.append(
+    h("div", { class: "dlg-head", style: { borderTopColor: color } },
+      h("div", { class: "dlg-head-main" },
+        h("div", { class: "cid", style: { color } }, formatLabel(t, board)),
+        h("h2", {}, t.title)),
+      h("div", { class: "dlg-head-tags" },
+        c ? h("span", { class: "pill", style: { background: color } }, c.label || c.prefix) : null,
+        phaseName(board, t.phaseId) ? h("span", { class: "pill ghost" }, phaseName(board, t.phaseId)) : null,
+        h("span", { class: "pill " + st.cls }, st.label))),
+    h("div", { class: "dlg-body" },
+      h("div", { class: "detail-body", html: renderMarkdown(t.body) }),
+      columnSwitch(board, t),
+      timeSection(board, t),
+      todoSection(board, t),
+      resourceSection(board, t),
+      assigneeSection(board, t),
+      depSection(board, t)),
+    h("div", { class: "dlg-foot" },
+      h("button", { class: "btn", onclick: () => { d.close(); openEdit(id); } }, "Bearbeiten"),
+      h("button", { class: "btn pri", onclick: () => d.close() }, "Schließen")),
+  );
+  if (!d.open) d.showModal();
+}
+
+// Spalte/Status direkt umschalten — der Touch-Ersatz fürs Drag&Drop des Boards.
+function columnSwitch(board, t) {
+  const cols = board.config.columns;
+  return h("div", { class: "panel" },
+    h("div", { class: "panel-head" }, h("span", {}, "Spalte / Status")),
+    h("div", { class: "col-switch" },
+      cols.map((col) => h("button", {
+        class: "col-switch-btn" + (col.id === t.columnId ? " on" : ""),
+        onclick: () => {
+          store.commit((b) => { const x = b.tasks.find((y) => y.id === t.id); if (x) x.columnId = col.id; });
+          openDetail(t.id);
+        },
+      }, col.title))));
+}
+
+function phaseName(board, id) {
+  const p = board.config.phases.find((x) => x.id === id);
+  return p ? p.label : "";
+}
+
+function timeSection(board, t) {
+  const estMin = (t.estH || 0) * 60;
+  const logMin = t.loggedM || 0;
+  const pct = estMin > 0 ? Math.min(100, Math.round(logMin / estMin * 100)) : 0;
+  const over = estMin > 0 && logMin > estMin;
+  const color = cat(board, t.categoryId)?.color || "var(--accent)";
+  const running = store.timer.taskId === t.id;
+  const addInput = h("input", { type: "number", min: "0", value: "30", class: "mini-num" });
+
+  return h("div", { class: "panel" },
+    h("div", { class: "panel-head" },
+      h("span", {}, "Zeiterfassung"),
+      h("span", { class: "muted" }, `${pct}% der geplanten Zeit`)),
+    h("div", { class: "bar" },
+      h("div", { class: "bar-fill", style: { width: pct + "%", background: over ? "var(--danger)" : color } })),
+    h("div", { class: "panel-row" },
+      h("div", {}, h("strong", {}, `${t.estH || 0}h`), " geplant"),
+      h("div", {}, h("strong", {}, `${Math.floor(logMin / 60)}h ${logMin % 60}m`), " geloggt"),
+      h("div", { class: "spacer" }),
+      addInput,
+      h("button", {
+        class: "btn sm", title: "Geloggte Zeit verringern", onclick: () => {
+          const m = parseInt(addInput.value) || 0;
+          store.logTime(t.id, -m);
+          openDetail(t.id);
+        },
+      }, "− Min"),
+      h("button", {
+        class: "btn sm", onclick: () => {
+          const m = parseInt(addInput.value) || 0;
+          store.logTime(t.id, m);
+          openDetail(t.id);
+        },
+      }, "+ Min"),
+      h("button", {
+        class: "btn sm" + (running ? " pri" : ""), onclick: () => {
+          running ? store.stopTimer() : store.startTimer(t.id);
+          openDetail(t.id);
+        },
+      }, running ? "⏹ Timer" : "▶ Timer")),
+  );
+}
+
+function todoSection(board, t) {
+  const todos = t.todos || [];
+  const newInput = h("input", { type: "text", placeholder: "Neuer Punkt…", class: "grow" });
+  const add = () => {
+    const text = newInput.value.trim();
+    if (!text) return;
+    store.commit((b) => {
+      const x = b.tasks.find((y) => y.id === t.id);
+      x.todos = x.todos || []; x.todos.push({ id: uid("todo"), text, done: false });
+    });
+    openDetail(t.id);
+  };
+  return h("div", { class: "panel" },
+    h("div", { class: "panel-head" },
+      h("span", {}, "Checkliste"),
+      h("span", { class: "muted" }, `${todos.filter((x) => x.done).length}/${todos.length}`)),
+    h("ul", { class: "todo-list" },
+      todos.map((td) => h("li", {},
+        h("label", {},
+          h("input", {
+            type: "checkbox", checked: td.done, onchange: () => {
+              store.commit((b) => {
+                const x = b.tasks.find((y) => y.id === t.id);
+                const item = x.todos.find((z) => z.id === td.id);
+                if (item) item.done = !item.done;
+              });
+              openDetail(t.id);
+            },
+          }),
+          h("span", { class: td.done ? "done" : "" }, td.text)),
+        h("button", {
+          class: "icon-del", title: "Entfernen", onclick: () => {
+            store.commit((b) => {
+              const x = b.tasks.find((y) => y.id === t.id);
+              x.todos = x.todos.filter((z) => z.id !== td.id);
+            });
+            openDetail(t.id);
+          },
+        }, "×")))),
+    h("div", { class: "panel-row" }, newInput,
+      h("button", { class: "btn sm", onclick: add }, "Hinzufügen")),
+  );
+}
+
+function resourceSection(board, t) {
+  const res = t.resources || [];
+  const labelIn = h("input", { type: "text", placeholder: "Bezeichnung", class: "grow" });
+  const urlIn = h("input", { type: "text", placeholder: "https://…", class: "grow" });
+  const add = () => {
+    const url = sanitizeUrl(urlIn.value.trim());
+    const label = labelIn.value.trim() || url;
+    if (!url) { toast("Ungültige oder unsichere URL"); return; }
+    store.commit((b) => {
+      const x = b.tasks.find((y) => y.id === t.id);
+      x.resources = x.resources || []; x.resources.push({ label, url });
+    });
+    openDetail(t.id);
+  };
+  return h("div", { class: "panel" },
+    h("div", { class: "panel-head" }, h("span", {}, "Ressourcen & Links")),
+    h("ul", { class: "res-list" },
+      res.map((r, i) => h("li", {},
+        r.url ? h("a", { href: r.url, target: "_blank", rel: "noopener noreferrer" }, r.label || r.url)
+              : h("span", {}, r.label),
+        h("button", {
+          class: "icon-del", title: "Entfernen", onclick: () => {
+            store.commit((b) => { const x = b.tasks.find((y) => y.id === t.id); x.resources.splice(i, 1); });
+            openDetail(t.id);
+          },
+        }, "×")))),
+    h("div", { class: "panel-row" }, labelIn, urlIn,
+      h("button", { class: "btn sm", onclick: add }, "+")),
+  );
+}
+
+function assigneeSection(board, t) {
+  const newName = h("input", { type: "text", placeholder: "Neue Person…", class: "grow" });
+  const createAndAssign = () => {
+    const name = newName.value.trim();
+    if (!name) return;
+    store.commit((b) => {
+      let p = b.people.find((x) => x.name.toLowerCase() === name.toLowerCase());
+      if (!p) { p = { id: uid("p"), name, color: pickColor(b.people.length) }; b.people.push(p); }
+      const x = b.tasks.find((y) => y.id === t.id);
+      x.assignees = x.assignees || [];
+      if (!x.assignees.includes(p.id)) x.assignees.push(p.id);
+    });
+    openDetail(t.id);
+  };
+  return h("div", { class: "panel" },
+    h("div", { class: "panel-head" }, h("span", {}, "Verantwortliche")),
+    h("div", { class: "people-chips" },
+      board.people.map((p) => {
+        const on = (t.assignees || []).includes(p.id);
+        return h("button", {
+          class: "chip" + (on ? " on" : ""),
+          style: on ? { background: p.color, borderColor: p.color, color: "#fff" } : {},
+          onclick: () => {
+            store.commit((b) => {
+              const x = b.tasks.find((y) => y.id === t.id);
+              x.assignees = x.assignees || [];
+              x.assignees = on ? x.assignees.filter((a) => a !== p.id) : [...x.assignees, p.id];
+            });
+            openDetail(t.id);
+          },
+        }, p.name);
+      })),
+    h("div", { class: "panel-row" }, newName,
+      h("button", { class: "btn sm", onclick: createAndAssign }, "+ Person")),
+  );
+}
+
+function depSection(board, t) {
+  if (!t.deps || !t.deps.length) return null;
+  return h("div", { class: "panel" },
+    h("div", { class: "panel-head" }, h("span", {}, "Voraussetzungen")),
+    t.deps.map((depId) => {
+      const dep = board.tasks.find((x) => x.id === depId);
+      if (!dep) return h("div", { class: "muted" }, "(entfernt)");
+      const color = cat(board, dep.categoryId)?.color || "var(--muted)";
+      return h("div", {
+        class: "dep-card", onclick: () => openDetail(dep.id),
+      },
+        h("span", { class: "dep-bar", style: { background: color } }),
+        h("div", {},
+          h("div", { class: "cid" }, formatLabel(dep, board)),
+          h("div", {}, dep.title)));
+    }),
+  );
+}
+
+const COLORS = ["#2563EB", "#059669", "#D97706", "#9333EA", "#DC2626", "#0891B2", "#DB2777"];
+function pickColor(i) { return COLORS[i % COLORS.length]; }
+
+// --------------------------------------------------------- Bearbeiten-Form --
+
+function openEdit(id) {
+  const board = store.getBoard();
+  const isNew = id == null;
+  const t = isNew ? blankTask(board) : task(id);
+
+  const d = dlg();
+  clear(d);
+
+  const f = {};
+  const opt = (val, label, sel) => h("option", { value: val, selected: sel }, label);
+
+  f.title = h("input", { type: "text", value: t.title });
+  f.estH = h("input", { type: "number", step: "0.5", min: "0", value: String(t.estH || 0) });
+  f.body = h("textarea", { class: "mono" }, t.body || "");
+  f.category = h("select", {}, board.config.categories.map((c) => opt(c.id, c.label || c.prefix, c.id === t.categoryId)));
+  f.phase = h("select", {}, h("option", { value: "" }, "—"),
+    board.config.phases.map((p) => opt(p.id, p.label, p.id === t.phaseId)));
+  f.column = h("select", {}, board.config.columns.map((c) => opt(c.id, c.title, c.id === t.columnId)));
+  f.parent = h("select", {}, h("option", { value: "" }, "— keine —"),
+    board.tasks.filter((x) => x.id !== t.id).map((x) => opt(x.id, formatLabel(x, board) + " " + x.title, x.id === t.parentId)));
+
+  // Abhängigkeiten als Mehrfachauswahl (Checkbox-Liste)
+  const depBox = h("div", { class: "dep-picker" },
+    board.tasks.filter((x) => x.id !== t.id).map((x) => h("label", {},
+      h("input", { type: "checkbox", value: x.id, checked: (t.deps || []).includes(x.id) }),
+      `${formatLabel(x, board)} ${x.title}`)));
+
+  d.append(
+    h("div", { class: "dlg-body" },
+      h("h2", {}, isNew ? "Neue Aufgabe" : "Aufgabe bearbeiten"),
+      field("Titel", f.title),
+      h("div", { class: "grid2" }, field("Kategorie", f.category), field("Geplante Stunden", f.estH)),
+      h("div", { class: "grid2" }, field("Phase", f.phase), field("Spalte", f.column)),
+      field("Übergeordnete Aufgabe (für WBS-Hierarchie)", f.parent),
+      field("Beschreibung (Markdown)", f.body),
+      field("Abhängigkeiten", depBox)),
+    h("div", { class: "dlg-foot" },
+      h("button", { class: "btn", onclick: () => d.close() }, "Abbrechen"),
+      h("button", {
+        class: "btn pri", onclick: () => {
+          const title = f.title.value.trim();
+          if (!title) { toast("Titel fehlt"); return; }
+          const deps = [...depBox.querySelectorAll("input:checked")].map((i) => i.value);
+          store.commit((b) => {
+            const payload = {
+              title, categoryId: f.category.value, phaseId: f.phase.value,
+              columnId: f.column.value, parentId: f.parent.value || null,
+              estH: parseFloat(f.estH.value) || 0, body: f.body.value, deps,
+            };
+            if (isNew) {
+              b.tasks.push({
+                id: uid("t"), wbs: "", order: b.tasks.length, loggedM: 0,
+                assignees: [], todos: [], resources: [], ...payload,
+              });
+            } else {
+              Object.assign(b.tasks.find((x) => x.id === id), payload);
+            }
+          });
+          d.close();
+          toast(isNew ? "Aufgabe angelegt" : "Gespeichert");
+        },
+      }, "Speichern")),
+  );
+  if (!d.open) d.showModal();
+  f.title.focus();
+}
+
+function blankTask(board) {
+  return {
+    id: null, title: "", body: "", estH: 1, deps: [], parentId: null,
+    categoryId: board.config.categories[0]?.id || "",
+    phaseId: board.config.phases[0]?.id || "",
+    columnId: board.config.columns[0].id,
+  };
+}
+
+function field(label, control) {
+  return h("label", { class: "field" }, h("span", {}, label), control);
+}
+
+  return { openDetail, openEdit };
+})();
+
+const __M_render_progress = (function(){
+  const { h } = __M_dom;
+  const { phaseBudgetHours } = __M_schedule;
+// Gemeinsamer Fortschritts-/Budget-Kopf: Gesamtfortschritt, Fortschritt je
+// Kategorie und Stunden-Budget je Phase. Wird in allen Ansichten (Kanban,
+// Zeitplan, Liste) identisch oben angezeigt.
+
+
+function round1(n) { return Math.round(n * 10) / 10; }
+
+function progressArea(board) {
+  const cols = board.config.columns;
+  const firstCol = cols[0].id, lastCol = cols[cols.length - 1].id;
+  let todo = 0, wip = 0, done = 0;
+  const perCat = {};
+  for (const t of board.tasks) {
+    const isDone = t.columnId === lastCol;
+    if (isDone) done++; else if (t.columnId === firstCol) todo++; else wip++;
+    const pc = (perCat[t.categoryId] = perCat[t.categoryId] || { total: 0, done: 0 });
+    pc.total++; if (isDone) pc.done++;
+  }
+  const total = board.tasks.length || 1;
+  const pct = (n) => Math.round(n / total * 100);
+
+  // Budget je Phase (Summe estH vs. dynamisches Budget aus Std./Woche)
+  const phaseHours = {};
+  for (const t of board.tasks) phaseHours[t.phaseId] = (phaseHours[t.phaseId] || 0) + (t.estH || 0);
+  const loggedH = Math.floor(board.tasks.reduce((a, t) => a + (t.loggedM || 0), 0) / 60);
+
+  return h("div", { class: "progress-area" },
+    h("div", { class: "prog-bar-wrap" },
+      h("div", { class: "prog-labels" },
+        h("span", {}, `Gesamt: ${done}/${board.tasks.length} erledigt (${pct(done)}%)`),
+        h("span", {}, `${wip} in Arbeit · ${todo} offen`)),
+      h("div", { class: "prog-bar" },
+        h("div", { class: "prog-seg", style: { width: pct(done) + "%", background: "var(--ok)" } }),
+        h("div", { class: "prog-seg", style: { width: pct(wip) + "%", background: "var(--wip)" } }),
+        h("div", { class: "prog-seg", style: { width: pct(todo) + "%", background: "var(--todo)" } }))),
+    h("div", { class: "prog-blocks" },
+      board.config.categories.map((c) => {
+        const v = perCat[c.id] || { total: 0, done: 0 };
+        const p = v.total ? Math.round(v.done / v.total * 100) : 0;
+        return h("span", { class: "prog-block", style: { borderColor: c.color } }, `${c.prefix || c.label}: ${p}%`);
+      })),
+    h("div", { class: "budget" },
+      board.config.phases.map((ph) => {
+        const used = phaseHours[ph.id] || 0;
+        const budget = phaseBudgetHours(ph, board);
+        const over = budget > 0 && used > budget;
+        return h("span", {},
+          `📅 ${ph.label}: ${round1(used)}h / ${round1(budget)}h`,
+          over ? h("span", { class: "over" }, " ⚠ über Budget!") : null);
+      }),
+      h("span", {}, `⏱ Gesamt geloggt: ${loggedH}h`)));
+}
+
+  return { progressArea };
+})();
+
+const __M_render_board = (function(){
+  const { store } = __M_store;
+  const { h, clear } = __M_dom;
+  const { formatLabel } = __M_naming;
+  const { openDetail, openEdit } = __M_render_detail;
+  const { progressArea } = __M_render_progress;
+// Kanban-Ansicht: Spalten, Karten, Drag&Drop, Filter.
+
+
+let dragId = null;
+
+function matchesFilter(board, task) {
+  const f = store.filters;
+  if (f.category !== "all" && task.categoryId !== f.category) return false;
+  if (f.phase !== "all" && task.phaseId !== f.phase) return false;
+  if (f.q) {
+    const q = f.q.toLowerCase();
+    const label = formatLabel(task, board).toLowerCase();
+    if (!(task.title.toLowerCase().includes(q) || label.includes(q) ||
+          (task.body || "").toLowerCase().includes(q))) return false;
+  }
+  return true;
+}
+
+function categoryOf(board, id) {
+  return board.config.categories.find((c) => c.id === id);
+}
+function phaseOf(board, id) {
+  return board.config.phases.find((p) => p.id === id);
+}
+
+function card(board, task) {
+  const cat = categoryOf(board, task.categoryId);
+  const color = cat?.color || "var(--muted)";
+  const logged = task.loggedM
+    ? ` · ${Math.floor(task.loggedM / 60)}h${task.loggedM % 60}m` : "";
+  const doneTodos = (task.todos || []).filter((t) => t.done).length;
+
+  const el = h("article", {
+    class: "card", draggable: "true", dataset: { id: task.id },
+    style: { borderLeftColor: color },
+    // Einzelklick/-tipp öffnet das Detail (funktioniert auch auf Touch, wo
+    // Doppeltipp/Drag nicht zuverlässig sind). Ein abgeschlossener Drag löst
+    // keinen click aus -> kein Konflikt mit Desktop-Drag&Drop.
+    onclick: (e) => { if (e.target.closest(".del")) return; openDetail(task.id); },
+    ondragstart: (e) => { dragId = task.id; el.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; },
+    ondragend: () => el.classList.remove("dragging"),
+  },
+    h("button", {
+      class: "del", title: "Löschen",
+      onclick: (e) => { e.stopPropagation(); deleteTask(task.id); },
+    }, "×"),
+    h("div", { class: "cid" }, formatLabel(task, board)),
+    h("h3", {}, task.title),
+    h("div", { class: "meta" },
+      cat ? h("span", { class: "tag", title: cat.label, style: { borderColor: color, color } }, cat.prefix || cat.label) : null,
+      phaseOf(board, task.phaseId) ? h("span", { class: "tag phase" }, phaseOf(board, task.phaseId).label) : null,
+      task.estH ? h("span", { class: "tag" }, `⏱${task.estH}h${logged}`) : null,
+    ),
+    (task.todos && task.todos.length)
+      ? h("div", { class: "card-todos" }, `☑ ${doneTodos}/${task.todos.length}`) : null,
+    (task.deps && task.deps.length)
+      ? h("div", { class: "dep-indicator" }, `⟵ ${task.deps.map((d) => depLabel(board, d)).join(", ")}`) : null,
+    assigneeRow(board, task),
+  );
+  return el;
+}
+
+function depLabel(board, depId) {
+  const t = board.tasks.find((x) => x.id === depId);
+  return t ? formatLabel(t, board) : "?";
+}
+
+function assigneeRow(board, task) {
+  if (!task.assignees || !task.assignees.length) return null;
+  const people = task.assignees
+    .map((id) => board.people.find((p) => p.id === id))
+    .filter(Boolean);
+  return h("div", { class: "avatars" },
+    people.map((p) => h("span", {
+      class: "avatar", title: p.name,
+      style: { background: p.color || "var(--muted)" },
+    }, initials(p.name)))
+  );
+}
+
+function initials(name) {
+  return (name || "?").split(/\s+/).map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function deleteTask(id) {
+  if (!confirm("Aufgabe löschen?")) return;
+  store.commit((b) => {
+    b.tasks = b.tasks.filter((t) => t.id !== id);
+    for (const t of b.tasks) t.deps = (t.deps || []).filter((d) => d !== id);
+  });
+}
+
+function moveTask(id, columnId) {
+  store.commit((b) => {
+    const t = b.tasks.find((x) => x.id === id);
+    if (t) t.columnId = columnId;
+  });
+}
+
+function renderBoard(mountEl) {
+  const board = store.getBoard();
+  clear(mountEl).appendChild(progressArea(board));
+  const wrap = h("div", { class: "board" });
+
+  for (const col of board.config.columns) {
+    const visible = board.tasks
+      .filter((t) => t.columnId === col.id && matchesFilter(board, t))
+      .sort((a, b) => String(a.wbs).localeCompare(String(b.wbs), "de", { numeric: true }));
+
+    const list = h("div", { class: "list", dataset: { col: col.id } });
+    visible.forEach((t) => list.appendChild(card(board, t)));
+
+    list.addEventListener("dragover", (e) => { e.preventDefault(); list.classList.add("drag-over"); });
+    list.addEventListener("dragleave", () => list.classList.remove("drag-over"));
+    list.addEventListener("drop", (e) => {
+      e.preventDefault(); list.classList.remove("drag-over");
+      if (dragId != null) { moveTask(dragId, col.id); dragId = null; }
+    });
+
+    const column = h("section", { class: "col" },
+      h("div", { class: "col-h" },
+        h("span", {}, col.title),
+        h("span", { class: "cnt" }, String(visible.length))),
+      list,
+    );
+    if (col.id === board.config.columns[0].id) {
+      column.appendChild(h("button", {
+        class: "add-btn", onclick: () => openEdit(null),
+      }, "+ Neue Aufgabe"));
+    }
+    wrap.appendChild(column);
+  }
+  mountEl.appendChild(wrap);
+}
+
+  return { renderBoard };
+})();
+
+const __M_render_gantt = (function(){
+  const { store } = __M_store;
+  const { h, clear, toast } = __M_dom;
+  const { schedule, parseDate, learningDayOffsets, MS_PER_DAY, isoWeek, dmLabel } = __M_schedule;
+  const { formatLabel } = __M_naming;
+  const { uid } = __M_model;
+  const { openDetail } = __M_render_detail;
+  const { progressArea } = __M_render_progress;
+// Zeitplan-/Gantt-Ansicht. Nutzt core/schedule.js. Zeigt Overflow (verlängerte
+// Balken), Blocker (gesperrte Zonen, hier auch konfigurierbar) und Abhängigkeiten
+// als saubere Verbindungs-Pfeile. KW- oder Datums-Achse.
+
+
+const SVGNS = "http://www.w3.org/2000/svg";
+
+function contiguousRanges(days) {
+  const ranges = [];
+  let start = null, prev = null;
+  for (const d of days) {
+    if (start == null) { start = d; prev = d; }
+    else if (d === prev + 1) prev = d;
+    else { ranges.push([start, prev]); start = d; prev = d; }
+  }
+  if (start != null) ranges.push([start, prev]);
+  return ranges;
+}
+
+// Blocker direkt im Zeitplan anlegen/entfernen.
+function blockerPanel(board) {
+  const label = h("input", { type: "text", placeholder: "Anlass (z. B. Stundenausfall)" });
+  const from = h("input", { type: "date" });
+  const to = h("input", { type: "date" });
+  const add = () => {
+    if (!from.value) { toast("Startdatum fehlt"); return; }
+    store.commit((b) => b.blockers.push({
+      id: uid("blk"), label: label.value.trim() || "Sperre",
+      start: from.value, end: to.value || from.value,
+    }));
+  };
+  return h("div", { class: "gantt-blockers" },
+    h("div", { class: "panel-head" }, h("span", {}, "Sperren / Termine (Stundenausfall)")),
+    h("div", { class: "blocker-chips" },
+      (board.blockers || []).map((bl, i) => h("span", { class: "blocker-chip" },
+        `${bl.label}: ${bl.start}${bl.end && bl.end !== bl.start ? "–" + bl.end : ""}`,
+        h("button", { class: "icon-del", title: "Entfernen", onclick: () => store.commit((b) => b.blockers.splice(i, 1)) }, "×")))),
+    h("div", { class: "panel-row" },
+      h("span", { class: "field-cap" }, "Anlass"), label,
+      h("span", { class: "field-cap" }, "Von"), from,
+      h("span", { class: "field-cap" }, "Bis"), to,
+      h("button", { class: "btn sm", onclick: add }, "+ Sperre")));
+}
+
+// Legende für die Gantt-Ansicht (Balken-Zustände + Marker).
+function ganttLegend() {
+  const li = (cls, label) => h("span", { class: "li" }, h("span", { class: "sw " + cls }), label);
+  return h("div", { class: "gantt-legend" },
+    li("wip", "In Bearbeitung"),
+    li("done", "Erledigt"),
+    li("over", "Zeit überschritten"),
+    li("today", "Heute"),
+    li("end", "Geplantes Ende"),
+    li("dep", "Abhängigkeit"));
+}
+
+function renderGantt(mountEl) {
+  const board = store.getBoard();
+  const sched = schedule(board);
+  const total = Math.max(1, sched.totalDays);
+  const t0 = parseDate(sched.t0) || new Date();
+  const dateMode = board.config.dateMode === "date";
+
+  // Datums-Ansicht mit gesetzten Lerntagen: komprimiertes Raster (nur echte
+  // Lerntage). Sonst lineare Kalender-Achse (Balken sind bereits korrekt skaliert).
+  const learnDays = learningDayOffsets(board, sched);
+  const compressed = dateMode && learnDays && learnDays.length > 0;
+  const nLearn = compressed ? learnDays.length : 0;
+  const coordOf = (d) => { // Anzahl Lerntage strikt vor Offset d (Bin-Suche)
+    let lo = 0, hi = learnDays.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (learnDays[mid] < d) lo = mid + 1; else hi = mid; }
+    return lo;
+  };
+  // Zeitachse nutzt nur PLOT% der Breite -> rechts bleibt ein Puffer, damit Balken
+  // (und ihre Labels) am rechten Rand nicht abgeschnitten werden.
+  const PLOT = 95;
+  const dayToX = compressed
+    ? (d) => Math.min(PLOT, Math.max(0, (coordOf(d) / nLearn) * PLOT))
+    : (d) => Math.min(PLOT, Math.max(0, (d / total) * PLOT));
+
+  // Fortschritts-/Budget-Kopf (außerhalb der scrollbaren Gantt-Tabelle, damit
+  // er bündig wie in den anderen Ansichten am Seitenrand sitzt).
+  clear(mountEl).appendChild(progressArea(board));
+
+  const wrap = h("div", { class: "gantt-wrap" });
+  const cols = board.config.columns;
+  const doneId = cols[cols.length - 1].id;
+
+  if (sched.hasCycle) {
+    wrap.appendChild(h("div", { class: "warn" }, "⚠ Zyklische Abhängigkeit erkannt — Reihenfolge ggf. unvollständig."));
+  }
+
+  const chart = h("div", { class: "gantt" });
+
+  // Achse
+  const axis = h("div", { class: "gantt-axis" }, h("div", { class: "gantt-label-col" }, "Aufgabe"));
+  const timeline = h("div", { class: "gantt-timeline" });
+  if (compressed) {
+    // Ein Tick je Lerntag, sinnvoll ausgedünnt (max. ~14 Beschriftungen).
+    const step = Math.max(1, Math.ceil(nLearn / 14));
+    for (let k = 0; k < nLearn; k += step) {
+      const dt = new Date(t0.getTime() + learnDays[k] * MS_PER_DAY);
+      const span = Math.min(step, nLearn - k);
+      timeline.appendChild(h("div", { class: "gantt-week", style: { flex: `0 0 ${(span / nLearn * PLOT).toFixed(2)}%` } }, dmLabel(dt)));
+    }
+  } else {
+    for (let d = 0; d < total; d += 7) {
+      const dt = new Date(t0.getTime() + d * MS_PER_DAY);
+      const label = dateMode ? dmLabel(dt) : "KW" + isoWeek(dt);
+      timeline.appendChild(h("div", { class: "gantt-week", style: { flex: `0 0 ${(7 / total * PLOT).toFixed(2)}%` } }, label));
+    }
+  }
+  axis.appendChild(timeline);
+  chart.appendChild(axis);
+
+  // In der komprimierten Lerntage-Ansicht entfallen gesperrte Tage komplett.
+  const blockedRanges = compressed ? [] : contiguousRanges(sched.blocked);
+  const blockedBands = () => h("div", { class: "blocked-layer" },
+    blockedRanges.map(([s, e]) => h("div", {
+      class: "blocked-band", title: "Gesperrt",
+      style: { left: dayToX(s) + "%", width: Math.max(0.6, dayToX(e + 1) - dayToX(s)) + "%" },
+    })));
+
+  // Zeilen sammeln; Balken-Elemente je Task-ID merken (für Connector-Messung).
+  const rows = h("div", { class: "gantt-rows" });
+  const barEls = {};
+
+  for (const c of board.config.categories) {
+    const items = board.tasks
+      .filter((t) => t.categoryId === c.id)
+      .sort((a, b) => String(a.wbs).localeCompare(String(b.wbs), "de", { numeric: true }));
+    if (!items.length) continue;
+
+    rows.appendChild(h("div", { class: "gantt-group", style: { color: c.color, borderColor: c.color } },
+      h("span", { class: "gantt-group-label" }, c.label || c.prefix)));
+
+    for (const t of items) {
+      const s = sched.tasks[t.id];
+      if (!s) continue;
+      const left = dayToX(s.startDay);
+      const width = Math.max(0.8, dayToX(s.endDay + 1) - dayToX(s.startDay));
+      const isDone = t.columnId === doneId;
+      const isWip = !isDone && t.columnId !== cols[0].id; // weder erste (To-do) noch letzte (Erledigt) Spalte
+
+      // Innenabstand an den Tages-/KW-Grenzen, damit aufeinanderfolgende Balken sich
+      // nicht berühren und die Verbindungslinien Platz haben. Gedeckelt auf 25% der
+      // Balkenbreite, damit schmale Balken (kurze Aufgaben in der KW-Ansicht) nicht
+      // verschwinden – sie behalten mindestens die Hälfte ihrer Breite.
+      const inset = `min(10px, ${(width * 0.25).toFixed(2)}%)`;
+      const barStyle = { left: `calc(${left.toFixed(2)}% + ${inset})`, width: `calc(${width.toFixed(2)}% - 2 * ${inset})`, background: c.color };
+      if (isDone) barStyle.opacity = "0.35";
+      if (s.overflow) barStyle.background = `repeating-linear-gradient(45deg, ${c.color}, ${c.color} 11px, color-mix(in srgb, var(--danger) 60%, ${c.color}) 11px, color-mix(in srgb, var(--danger) 60%, ${c.color}) 15px)`;
+
+      const bar = h("div", {
+        class: "gantt-bar" + (s.overflow ? " overflow" : "") + (isWip ? " wip" : ""),
+        style: barStyle, onclick: () => openDetail(t.id),
+      }, h("span", { class: "bar-label" }, `${t.estH || 0}h`));
+      barEls[t.id] = bar;
+
+      rows.appendChild(h("div", { class: "gantt-row" },
+        h("div", { class: "gantt-row-label" + (isDone ? " done" : ""), onclick: () => openDetail(t.id), title: t.title },
+          h("span", { class: "rl-text" }, h("span", { class: "rid" }, formatLabel(t, board)), " ", t.title)),
+        h("div", { class: "gantt-bar-area" }, blockedBands(), bar)));
+    }
+  }
+  chart.appendChild(rows);
+
+  // Heute-Position für die vertikale Heute-Linie (wird unten als Overlay gezeichnet).
+  const today = new Date();
+  const todayDay = Math.round((Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - t0.getTime()) / MS_PER_DAY);
+  const todayFrac = (todayDay >= 0 && todayDay <= total) ? dayToX(todayDay) / 100 : null;
+
+  wrap.appendChild(chart);
+  mountEl.appendChild(wrap);
+
+  // Legende + Blocker-Panel sitzen außerhalb des Horizontal-Scrolls (Footer in
+  // Seitenbreite), damit sie beim Scrollen stehen bleiben und nicht beschnitten werden.
+  // Legende erklärt Balken-Zustände und die „geplantes Ende"-Linie.
+  mountEl.appendChild(h("div", { class: "gantt-foot" },
+    ganttLegend(),
+    blockerPanel(board)));
+
+  // „Geplantes Ende"-Marker, wenn Aufgaben über das konfigurierte Ende hinauslaufen.
+  const plannedFrac = (sched.plannedDays != null && sched.plannedDays < total)
+    ? dayToX(sched.plannedDays) / 100
+    : null;
+
+  // Label-Platzierung, Pfeile und Marker hängen von der gemessenen Geometrie ab und
+  // werden bei jeder Breitenänderung (Resize, Scrollbar-Reflow) neu berechnet
+  // -> bleiben an jeder Bildschirmbreite korrekt.
+  setupGanttOverlays(rows, barEls, board, plannedFrac, todayFrac);
+}
+
+// Balken-Labels, die breiter als ihr Balken sind, werden rechts daneben gesetzt
+// (statt im Balken abgeschnitten zu werden). Muss nach dem Layout laufen.
+function adjustBarLabels(container) {
+  for (const bar of container.querySelectorAll(".gantt-bar")) {
+    const label = bar.querySelector(".bar-label");
+    if (!label) continue;
+    label.classList.remove("bar-label--outside");
+    if (label.scrollWidth > bar.clientWidth + 1) label.classList.add("bar-label--outside");
+  }
+}
+
+// Hält Label-Platzierung und Connector-Messung an der tatsächlichen Balken-Geometrie
+// aktuell. Die Balken sind prozentual skaliert, das SVG arbeitet aber mit Pixel-
+// Koordinaten – ohne Neuvermessung verrutschen die Pfeile bei Breitenänderung.
+let _ganttRO = null;
+let _ganttScroll = null; // { el, fn } – Scroll-Listener zum Ausblenden der Marker
+function setupGanttOverlays(container, barEls, board, plannedFrac, todayFrac) {
+  if (_ganttRO) { _ganttRO.disconnect(); _ganttRO = null; }
+  if (_ganttScroll) { _ganttScroll.el.removeEventListener("scroll", _ganttScroll.fn); _ganttScroll = null; }
+  const refresh = () => {
+    adjustBarLabels(container);
+    container.querySelector("svg.gantt-connectors")?.remove();
+    container.querySelector(".gantt-planned-end")?.remove();
+    container.querySelector(".gantt-today-line")?.remove();
+    drawDepConnectors(container, barEls, board);
+    if (todayFrac != null) drawTodayLine(container, todayFrac);
+    if (plannedFrac != null) drawPlannedEnd(container, plannedFrac);
+    clipMarkersToTimeline(container);
+  };
+  refresh(); // sofort, damit Pfeile/Labels nicht erst nach einem Frame erscheinen
+  if (typeof ResizeObserver === "function") {
+    let raf = 0;
+    _ganttRO = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(refresh); // Messung erst nach abgeschlossenem Layout
+    });
+    _ganttRO.observe(container);
+  }
+  // Beim Horizontal-Scrollen die vertikalen Marker ausblenden, sobald sie hinter die
+  // fixe Label-Spalte rutschen (sonst schauen sie an deren rechtem Rand hervor).
+  const wrap = container.closest(".gantt-wrap");
+  if (wrap) {
+    let raf2 = 0;
+    const fn = () => { cancelAnimationFrame(raf2); raf2 = requestAnimationFrame(() => clipMarkersToTimeline(container)); };
+    wrap.addEventListener("scroll", fn, { passive: true });
+    _ganttScroll = { el: wrap, fn };
+  }
+}
+
+// Heute-/Ende-Linie verstecken, wenn ihre X-Position unter der fixen Label-Spalte liegt.
+function clipMarkersToTimeline(container) {
+  const labelEl = container.querySelector(".gantt-row-label");
+  if (!labelEl) return;
+  const labelRight = labelEl.getBoundingClientRect().right;
+  for (const line of container.querySelectorAll(".gantt-today-line, .gantt-planned-end")) {
+    line.style.visibility = line.getBoundingClientRect().left < labelRight - 0.5 ? "hidden" : "visible";
+  }
+}
+
+// Vertikale „Heute"-Linie an der gemessenen X-Position (frac der Balkenfläche).
+function drawTodayLine(container, frac) {
+  const area = container.querySelector(".gantt-bar-area");
+  if (!area) return;
+  const base = container.getBoundingClientRect();
+  const ar = area.getBoundingClientRect();
+  if (!ar.width) return;
+  const x = (ar.left - base.left) + frac * ar.width;
+  container.appendChild(h("div", {
+    class: "gantt-today-line", title: "Heute",
+    style: { left: x.toFixed(1) + "px", height: container.scrollHeight + "px" },
+  }));
+}
+
+// Vertikale „geplantes Ende"-Linie an der gemessenen X-Position (frac der Balkenfläche).
+function drawPlannedEnd(container, frac) {
+  const area = container.querySelector(".gantt-bar-area");
+  if (!area) return;
+  const base = container.getBoundingClientRect();
+  const ar = area.getBoundingClientRect();
+  if (!ar.width) return;
+  const x = (ar.left - base.left) + frac * ar.width;
+  container.appendChild(h("div", {
+    class: "gantt-planned-end", title: "Geplantes Ende",
+    style: { left: x.toFixed(1) + "px", height: container.scrollHeight + "px" },
+  }));
+}
+
+function drawDepConnectors(container, barEls, board) {
+  const base = container.getBoundingClientRect();
+  if (!base.width) return;
+
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("class", "gantt-connectors");
+  svg.setAttribute("width", base.width);
+  svg.setAttribute("height", base.height);
+
+  const defs = document.createElementNS(SVGNS, "defs");
+  const marker = document.createElementNS(SVGNS, "marker");
+  marker.setAttribute("id", "lk-arrow");
+  marker.setAttribute("viewBox", "0 0 10 10");
+  marker.setAttribute("refX", "9"); marker.setAttribute("refY", "5");
+  marker.setAttribute("markerWidth", "6"); marker.setAttribute("markerHeight", "6");
+  marker.setAttribute("orient", "auto-start-reverse");
+  const tip = document.createElementNS(SVGNS, "path");
+  tip.setAttribute("d", "M0 0 L10 5 L0 10 z");
+  tip.setAttribute("fill", "context-stroke");
+  marker.appendChild(tip); defs.appendChild(marker); svg.appendChild(defs);
+
+  const catColor = (cid) => board.config.categories.find((c) => c.id === cid)?.color || "#888";
+
+  for (const t of board.tasks) {
+    const toBar = barEls[t.id];
+    if (!toBar || !t.deps || !t.deps.length) continue;
+    const tr = toBar.getBoundingClientRect();
+    const x2 = tr.left - base.left;
+    const y2 = tr.top - base.top + tr.height / 2;
+
+    for (const depId of t.deps) {
+      const fromBar = barEls[depId];
+      if (!fromBar) continue;
+      const fr = fromBar.getBoundingClientRect();
+      const x1 = fr.right - base.left;
+      const y1 = fr.top - base.top + fr.height / 2;
+      // Orthogonal: runter, dann nach rechts ins Ziel. Die senkrechte Spur xv bleibt
+      // rechts der Quelle (kein Überlaufen des Quellbalkens). Eintritts-Stummel hat
+      // Vorrang (Platz für den Pfeil): bis zu 12px vor dem Ziel; ist die Lücke kleiner,
+      // wird sie voll genutzt. Bei großer Lücke bleibt ein kleiner Austritts-Stummel.
+      const xv = Math.max(x1, Math.min(x1 + 4, x2 - 12));
+      const path = document.createElementNS(SVGNS, "path");
+      path.setAttribute("d", `M ${x1} ${y1} H ${xv} V ${y2} H ${x2}`);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", catColor(t.categoryId));
+      path.setAttribute("stroke-width", "1.6");
+      path.setAttribute("opacity", "0.75");
+      path.setAttribute("marker-end", "url(#lk-arrow)");
+      svg.appendChild(path);
+    }
+  }
+  container.appendChild(svg);
+}
+
+  return { renderGantt };
+})();
+
+const __M_render_list = (function(){
+  const { store } = __M_store;
+  const { h, clear } = __M_dom;
+  const { schedule, parseDate, MS_PER_DAY, isoWeek, dmLabel } = __M_schedule;
+  const { formatLabel } = __M_naming;
+  const { openDetail } = __M_render_detail;
+  const { progressArea } = __M_render_progress;
+// Zeitplan als Listenansicht — vollwertige, dauerhaft verfügbare Alternative
+// zum Gantt und zugleich der mobil-taugliche Standard (Gantt erzwingt 960px).
+// Gleiche Datenbasis (core/schedule.js), gruppiert nach Kategorie, Zeitraum als
+// Datum oder KW je nach config.dateMode. Zeile klickbar -> Detail.
+
+
+function statusOf(board, t) {
+  const cols = board.config.columns;
+  if (t.columnId === cols[cols.length - 1].id) return { label: "Erledigt", cls: "done" };
+  if (cols.length > 2 && t.columnId === cols[1].id) return { label: "In Bearbeitung", cls: "wip" };
+  return { label: "Offen", cls: "todo" };
+}
+
+function initials(name) {
+  return (name || "?").split(/\s+/).map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+}
+
+// Avatar-Zelle der Verantwortlichen (gleiche .avatars/.avatar-Optik wie die Kanban-Karten).
+function peopleCell(board, task) {
+  const people = (task.assignees || [])
+    .map((id) => board.people.find((p) => p.id === id))
+    .filter(Boolean);
+  return h("div", { class: "sched-cell people" },
+    people.length
+      ? h("div", { class: "avatars" },
+          people.map((p) => h("span", {
+            class: "avatar", title: p.name,
+            style: { background: p.color || "var(--muted)" },
+          }, initials(p.name))))
+      : null);
+}
+
+function renderList(mountEl) {
+  const board = store.getBoard();
+  const sched = schedule(board);
+  const t0 = parseDate(sched.t0) || new Date();
+  const dateMode = board.config.dateMode === "date";
+  const doneId = board.config.columns[board.config.columns.length - 1].id;
+
+  // Zeitraum eines Tasks: "TT.MM.–TT.MM." (Datumsmodus) bzw. "KW x–y".
+  const rangeLabel = (s) => {
+    const sd = new Date(t0.getTime() + s.startDay * MS_PER_DAY);
+    const ed = new Date(t0.getTime() + s.endDay * MS_PER_DAY);
+    if (dateMode) {
+      const same = s.startDay === s.endDay;
+      return same ? dmLabel(sd) : `${dmLabel(sd)} – ${dmLabel(ed)}`;
+    }
+    const w1 = isoWeek(sd), w2 = isoWeek(ed);
+    return w1 === w2 ? `KW ${w1}` : `KW ${w1}–${w2}`;
+  };
+
+  // Fortschritts-/Budget-Kopf (identisch zu Kanban & Gantt), außerhalb des Wraps.
+  clear(mountEl).appendChild(progressArea(board));
+
+  const wrap = h("div", { class: "sched-list-wrap" });
+
+  if (sched.hasCycle) {
+    wrap.appendChild(h("div", { class: "warn" }, "⚠ Zyklische Abhängigkeit erkannt — Reihenfolge ggf. unvollständig."));
+  }
+
+  // Eine gemeinsame Grid-Tabelle für ALLE Gruppen: Gruppenköpfe und Zeilen docken
+  // per subgrid an dieselben Spaltenspuren an -> Spalten fluchten zeilenübergreifend.
+  const table = h("div", { class: "sched-table" });
+
+  for (const c of board.config.categories) {
+    const items = board.tasks
+      .filter((t) => t.categoryId === c.id)
+      .sort((a, b) => String(a.wbs).localeCompare(String(b.wbs), "de", { numeric: true }));
+    if (!items.length) continue;
+
+    table.appendChild(h("div", { class: "gantt-group", style: { color: c.color, borderColor: c.color } }, c.label || c.prefix));
+
+    for (const t of items) {
+      const s = sched.tasks[t.id];
+      const isDone = t.columnId === doneId;
+      const st = statusOf(board, t);
+      const phase = board.config.phases.find((p) => p.id === t.phaseId);
+      const logged = t.loggedM
+        ? `${Math.floor(t.loggedM / 60)}h${t.loggedM % 60}m / ${t.estH || 0}h`
+        : `${t.estH || 0}h`;
+
+      table.appendChild(h("div", {
+        class: "sched-row" + (isDone ? " done" : ""),
+        style: { borderLeftColor: c.color },
+        onclick: () => openDetail(t.id),
+        title: t.title,
+      },
+        h("div", { class: "sched-cell title" },
+          h("span", { class: "rid" }, formatLabel(t, board)), " ", t.title),
+        h("div", { class: "sched-cell range" + (s && s.overflow ? " over" : "") },
+          s ? rangeLabel(s) : "—"),
+        h("div", { class: "sched-cell phase" },
+          phase ? h("span", { class: "tag phase" }, phase.label) : null),
+        peopleCell(board, t),
+        h("div", { class: "sched-cell hours" }, `⏱ ${logged}`),
+        h("div", { class: "sched-cell status" },
+          h("span", { class: "pill " + st.cls }, st.label))));
+    }
+  }
+  wrap.appendChild(table);
+
+  if (!board.tasks.length) {
+    wrap.appendChild(h("div", { class: "muted", style: { padding: "12px 0" } }, "Noch keine Aufgaben."));
+  }
+
+  mountEl.appendChild(wrap);
+}
+
+  return { renderList };
+})();
+
+const __M_render_settings = (function(){
+  const { store } = __M_store;
+  const { h, clear, toast } = __M_dom;
+  const { uid } = __M_model;
+  const { phaseBudgetHours } = __M_schedule;
+// Einstellungen: Board-Konfiguration über die GUI bearbeiten
+// (identisch auch via Roh-JSON-Import setzbar).
+
+
+const WEEKDAYS = [
+  { dow: 1, label: "Mo" }, { dow: 2, label: "Di" }, { dow: 3, label: "Mi" },
+  { dow: 4, label: "Do" }, { dow: 5, label: "Fr" }, { dow: 6, label: "Sa" }, { dow: 7, label: "So" },
+];
+
+function patternSum(pattern) {
+  return (pattern || []).reduce((s, d) => s + (d.hours || 0), 0);
+}
+
+function commitField(path, value) {
+  store.commit((b) => {
+    const parts = path.split(".");
+    let o = b;
+    for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]];
+    o[parts[parts.length - 1]] = value;
+  });
+}
+
+function textRow(label, value, onCommit, type = "text") {
+  const input = h("input", { type, value: value == null ? "" : value });
+  input.addEventListener("change", () => onCommit(input.value));
+  return h("label", { class: "field" }, h("span", {}, label), input);
+}
+
+function renderSettings(mountEl) {
+  const board = store.getBoard();
+  const cfg = board.config;
+  const root = h("div", { class: "settings" });
+
+  // Allgemein
+  root.appendChild(section("Allgemein",
+    h("div", { class: "grid2" },
+      textRow("Titel", cfg.title, (v) => commitField("config.title", v)),
+      textRow("Untertitel", cfg.subtitle, (v) => commitField("config.subtitle", v))),
+    h("div", { class: "grid2" },
+      dateModeSelect(cfg),
+      textRow("Namensformat", cfg.naming.format, (v) => commitField("config.naming.format", v))),
+    h("div", { class: "grid2" },
+      textRow("Startdatum", cfg.startDate, (v) => commitField("config.startDate", v), "date"),
+      textRow("Enddatum", cfg.endDate, (v) => commitField("config.endDate", v), "date")),
+    h("div", { class: "field" },
+      h("span", {}, "Lerntage (verfügbare Wochentage)"),
+      h("p", { class: "muted setting-hint" },
+        "Wochentage wählen und je Tag die Stunden eintragen. Leer = klassisch (Std./Woche je Phase über 7 Tage)."),
+      dayPatternEditor(cfg.availableDays || [], (next) => commitField("config.availableDays", next)))));
+
+  // Kategorien
+  root.appendChild(listSection("Kategorien", cfg.categories,
+    (c, i) => editableRow([
+      inp(c.label, "Bezeichnung", (v) => updateItem("categories", i, "label", v)),
+      inp(c.prefix, "Kürzel", (v) => updateItem("categories", i, "prefix", v)),
+      color(c.color, (v) => updateItem("categories", i, "color", v)),
+    ], () => removeItem("categories", i)),
+    () => addItem("categories", { id: uid("cat"), label: "Neue Kategorie", prefix: "NEU", color: "#2563EB" }),
+    [{ label: "Bezeichnung" }, { label: "Kürzel" }, { label: "Farbe", w: 44 }]));
+
+  // Phasen
+  root.appendChild(phasesSection(board));
+
+  // Blocker / Termine
+  root.appendChild(blockerSection(board));
+
+  // Personen
+  root.appendChild(peopleSection(board));
+
+  // Roh-JSON
+  root.appendChild(rawJsonSection(board));
+
+  clear(mountEl).appendChild(root);
+}
+
+function dateModeSelect(cfg) {
+  const sel = h("select", {},
+    h("option", { value: "kw", selected: cfg.dateMode !== "date" }, "Kalenderwochen"),
+    h("option", { value: "date", selected: cfg.dateMode === "date" }, "Datum"));
+  sel.addEventListener("change", () => commitField("config.dateMode", sel.value));
+  return h("label", { class: "field" }, h("span", {}, "Achsen-Ansicht"), sel);
+}
+
+function section(title, ...children) {
+  return h("section", { class: "settings-block" }, h("h2", {}, title), ...children);
+}
+
+// Wiederverwendbarer Lerntage-Editor (global + pro Phase). Ruft onCommit mit dem
+// vollständigen Pattern-Array { dow, hours }[] auf (leer = kein Pattern/erbt).
+function dayPatternEditor(pattern, onCommit) {
+  const map = new Map((pattern || []).map((d) => [d.dow, d.hours]));
+  const emit = () => onCommit(
+    WEEKDAYS.filter((w) => map.has(w.dow)).map((w) => ({ dow: w.dow, hours: map.get(w.dow) })));
+
+  const cells = WEEKDAYS.map((w) => {
+    const active = map.has(w.dow);
+    const cb = h("input", { type: "checkbox", checked: active });
+    const hrs = h("input", {
+      type: "number", min: "0", step: "0.5", class: "day-hours",
+      value: active ? map.get(w.dow) : "", placeholder: "h", disabled: !active,
+    });
+    cb.addEventListener("change", () => {
+      if (cb.checked) map.set(w.dow, map.get(w.dow) || 1);
+      else map.delete(w.dow);
+      emit();
+    });
+    hrs.addEventListener("change", () => {
+      map.set(w.dow, Math.max(0, parseFloat(hrs.value) || 0));
+      emit();
+    });
+    return h("label", { class: "day-cell" + (active ? " on" : "") }, cb, h("span", {}, w.label), hrs);
+  });
+
+  return h("div", { class: "daypattern" },
+    h("div", { class: "day-grid" }, cells),
+    h("div", { class: "muted day-sum" }, `Summe: ${round1(patternSum(pattern))} h/Woche`));
+}
+
+function phasesSection(board) {
+  const cfg = board.config;
+  const globalPattern = cfg.availableDays || [];
+  const heads = [{ label: "Phase" }, { label: "Start" }, { label: "Ende" }, { label: "Std./Woche" }, { label: "Budget (auto)" }];
+
+  const items = cfg.phases.map((p, i) => {
+    const override = p.availableDays || [];
+    const effective = override.length ? override : globalPattern;
+    const usesPattern = effective.length > 0;
+
+    const hoursCell = usesPattern
+      ? readCell(`${round1(patternSum(effective))} h`,
+        override.length ? "Summe der Phasen-Lerntage" : "Summe der globalen Lerntage")
+      : inp(p.hoursPerWeek, "h/Woche", (v) => updateItem("phases", i, "hoursPerWeek", parseFloat(v) || 0), "number");
+
+    const row = editableRow([
+      inp(p.label, "Phase", (v) => updateItem("phases", i, "label", v)),
+      inp(p.start, "Start", (v) => updateItem("phases", i, "start", v), "date"),
+      inp(p.end, "Ende", (v) => updateItem("phases", i, "end", v), "date"),
+      hoursCell,
+      readCell(`${round1(phaseBudgetHours(p, board))} h`, "Verfügbare Stunden (Kapazität abzüglich Sperren)"),
+    ], () => removeItem("phases", i));
+
+    const adv = h("details", { class: "phase-adv", open: override.length > 0 },
+      h("summary", {}, "Erweiterte Optionen: eigene Lerntage"),
+      h("p", { class: "muted setting-hint" }, override.length
+        ? "Eigene Lerntage aktiv (überschreibt global). Alle Tage abwählen = erbt wieder global."
+        : "Leer = erbt globale Lerntage. Tage wählen, um für diese Phase abzuweichen."),
+      dayPatternEditor(override, (next) => updateItem("phases", i, "availableDays", next)));
+
+    return h("div", { class: "phase-item" }, row, adv);
+  });
+
+  return h("section", { class: "settings-block" },
+    h("h2", {}, "Phasen"),
+    cfg.phases.length ? colHeads(heads) : null,
+    h("div", { class: "rows" }, items),
+    h("button", {
+      class: "btn sm",
+      onclick: () => addItem("phases", { id: uid("phase"), label: "Neue Phase", start: "", end: "", hoursPerWeek: 4, availableDays: [], color: "" }),
+    }, "+ Hinzufügen"));
+}
+
+function listSection(title, items, rowFn, onAdd, heads) {
+  return h("section", { class: "settings-block" },
+    h("h2", {}, title),
+    heads && items.length ? colHeads(heads) : null,
+    h("div", { class: "rows" }, items.map(rowFn)),
+    h("button", { class: "btn sm", onclick: onAdd }, "+ Hinzufügen"));
+}
+
+// Spaltenüberschriften, ausgerichtet auf editableRow (flex:1 bzw. feste Breite).
+function colHeads(cols) {
+  return h("div", { class: "edit-row heads" },
+    cols.map((c) => h("span", { style: c.w ? { flex: `0 0 ${c.w}px` } : { flex: "1" } }, c.label)),
+    h("span", { class: "head-spacer" }));
+}
+
+function editableRow(controls, onDelete) {
+  return h("div", { class: "edit-row" }, ...controls,
+    h("button", { class: "icon-del", title: "Entfernen", onclick: onDelete }, "×"));
+}
+
+function inp(value, ph, onCommit, type = "text") {
+  const input = h("input", { type, value: value == null ? "" : value, placeholder: ph });
+  input.addEventListener("change", () => onCommit(input.value));
+  return input;
+}
+
+// Schreibgeschützte, abgeleitete Zelle (z. B. dynamisches Budget).
+function readCell(text, title) {
+  return h("span", { class: "read-cell", title: title || "" }, text);
+}
+
+function round1(n) {
+  return Math.round((n || 0) * 10) / 10;
+}
+
+function color(value, onCommit) {
+  const input = h("input", { type: "color", value: value || "#2563EB" });
+  input.addEventListener("change", () => onCommit(input.value));
+  return input;
+}
+
+function updateItem(coll, i, key, value) {
+  store.commit((b) => { b.config[coll][i][key] = value; });
+}
+function addItem(coll, item) {
+  store.commit((b) => b.config[coll].push(item));
+}
+function removeItem(coll, i) {
+  store.commit((b) => b.config[coll].splice(i, 1));
+}
+
+function blockerSection(board) {
+  return h("section", { class: "settings-block" },
+    h("h2", {}, "Termine / Sperren (Stundenausfall)"),
+    (board.blockers || []).length ? colHeads([{ label: "Anlass" }, { label: "Von" }, { label: "Bis" }]) : null,
+    h("div", { class: "rows" }, (board.blockers || []).map((bl, i) => editableRow([
+      inp(bl.label, "Anlass", (v) => store.commit((b) => { b.blockers[i].label = v; })),
+      inp(bl.start, "Von", (v) => store.commit((b) => { b.blockers[i].start = v; }), "date"),
+      inp(bl.end, "Bis", (v) => store.commit((b) => { b.blockers[i].end = v; }), "date"),
+    ], () => store.commit((b) => b.blockers.splice(i, 1))))),
+    h("button", { class: "btn sm", onclick: () => store.commit((b) => b.blockers.push({ id: uid("blk"), label: "Ausfall", start: "", end: "" })) }, "+ Sperre"));
+}
+
+function peopleSection(board) {
+  const name = h("input", { type: "text", placeholder: "Name" });
+  return h("section", { class: "settings-block" },
+    h("h2", {}, "Personen"),
+    (board.people || []).length ? colHeads([{ label: "Name" }, { label: "Farbe", w: 44 }]) : null,
+    h("div", { class: "rows" }, (board.people || []).map((p, i) => editableRow([
+      inp(p.name, "Name", (v) => store.commit((b) => { b.people[i].name = v; })),
+      color(p.color, (v) => store.commit((b) => { b.people[i].color = v; })),
+    ], () => store.commit((b) => b.people.splice(i, 1))))),
+    h("div", { class: "panel-row" }, name,
+      h("button", {
+        class: "btn sm", onclick: () => {
+          if (!name.value.trim()) return;
+          store.commit((b) => b.people.push({ id: uid("p"), name: name.value.trim(), color: "#2563EB" }));
+        },
+      }, "+ Person")));
+}
+
+function rawJsonSection(board) {
+  const ta = h("textarea", { class: "mono", rows: "10" }, JSON.stringify(board, null, 2));
+  return h("section", { class: "settings-block" },
+    h("h2", {}, "Roh-JSON"),
+    h("p", { class: "muted" }, "Gesamtes Board als JSON. Änderungen werden validiert übernommen."),
+    ta,
+    h("button", {
+      class: "btn", onclick: () => {
+        try {
+          store.replaceBoard(JSON.parse(ta.value));
+          toast("Übernommen");
+        } catch (e) { toast("Ungültiges JSON: " + e.message); }
+      },
+    }, "JSON übernehmen"));
+}
+
+  return { renderSettings };
+})();
+
+const __M_import_export = (function(){
+  const { store } = __M_store;
+  const { toast } = __M_dom;
+  const { parseBoard } = __M_model;
+  const { escapeDataIsland } = __M_serialize;
+// Import/Export aus der GUI:
+//  - JSON-Import (Datei) mit Validierung vor Übernahme (kein State-Verlust bei Fehler)
+//  - JSON-Export des aktuellen Boards
+//  - Onepager-Export: klont das laufende Dokument und tauscht nur die Daten-Insel
+//    -> exakt dieselbe, voll interaktive App mit aktuellem Stand
+//  - Demo laden (same-origin fetch)
+
+
+function download(filename, text, type = "application/json") {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function slugTitle() {
+  return (store.getBoard().config.title || "board")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "board";
+}
+
+function exportJson() {
+  download(`${slugTitle()}.json`, JSON.stringify(store.getBoard(), null, 2));
+  toast("JSON exportiert");
+}
+
+function importFromText(text) {
+  let board;
+  try {
+    board = parseBoard(text); // safeParse + Migration + Sanitisierung + Validierung
+  } catch (e) {
+    toast("Import fehlgeschlagen: " + e.message);
+    return false;
+  }
+  store.replaceBoard(board);
+  toast("Import erfolgreich");
+  return true;
+}
+
+function importFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => importFromText(String(e.target.result));
+  reader.onerror = () => toast("Datei konnte nicht gelesen werden");
+  reader.readAsText(file);
+}
+
+function loadDemo() {
+  // Demo ist als separate Daten-Insel eingebettet (nur in der gehosteten App).
+  const el = document.getElementById("demo-data");
+  if (!el || !el.textContent.trim()) {
+    toast("Demo nur in der gehosteten Version verfügbar");
+    return;
+  }
+  importFromText(el.textContent);
+}
+
+/**
+ * Erzeugt eine self-contained Onepager-HTML aus dem laufenden Dokument:
+ * klont den DOM, leert die Laufzeit-Knoten (#app, Dialoge) und ersetzt die
+ * Daten-Insel durch den aktuellen Board-Stand. Das eingebettete Script bleibt
+ * unverändert -> CSP-Hash gültig, App voll funktionsfähig.
+ */
+function buildOnepagerHtml() {
+  const island = document.getElementById("board-data");
+  if (!island) return null; // nur im gebauten Single-File vorhanden
+  const root = document.documentElement.cloneNode(true);
+
+  const app = root.querySelector("#app");
+  if (app) app.innerHTML = "";
+  root.querySelector("#dlg")?.remove();
+  root.querySelector("#toast")?.remove();
+  // Demo gehört nur in die gehostete App, nicht in den exportierten Onepager.
+  root.querySelector("#demo-data")?.remove();
+
+  const clonedIsland = root.querySelector("#board-data");
+  clonedIsland.textContent = escapeDataIsland(JSON.stringify(store.getBoard()));
+
+  return "<!DOCTYPE html>\n" + root.outerHTML;
+}
+
+function exportOnepager() {
+  const html = buildOnepagerHtml();
+  if (!html) {
+    toast("Onepager-Export nur in der gebauten Datei verfügbar");
+    return;
+  }
+  download(`${slugTitle()}-onepager.html`, html, "text/html");
+  toast("Onepager exportiert");
+}
+
+  return { exportJson, importFromText, importFromFile, loadDemo, buildOnepagerHtml, exportOnepager };
+})();
+
+const __M_app = (function(){
+  const { store } = __M_store;
+  const { h, clear } = __M_dom;
+  const { renderBoard } = __M_render_board;
+  const { renderGantt } = __M_render_gantt;
+  const { renderList } = __M_render_list;
+  const { renderSettings } = __M_render_settings;
+  const { exportJson, exportOnepager, importFromFile, loadDemo } = __M_import_export;
+// Bootstrap & Grundgerüst: Header, Timer-Banner, Tabs, Toolbar, View-Routing.
+// Entry-Modul: der Build-Bootstrap ruft start() auf.
+
+
+const VIEWS = [
+  { id: "kanban", label: "Kanban" },
+  { id: "gantt", label: "Zeitplan" },
+  { id: "settings", label: "Einstellungen" },
+];
+
+let mount, headerEl, headerTextEl, headerAsideEl, timerEl, tabsEl, toolbarEl;
+let timerInterval = null;
+
+function start() {
+  store.init();
+
+  // Auf schmalen Viewports den Zeitplan standardmäßig als Liste zeigen
+  // (Gantt erzwingt 960px -> nur Horizontal-Scroll). Nutzer kann jederzeit umschalten.
+  try {
+    if (window.matchMedia && window.matchMedia("(max-width: 640px)").matches) {
+      store.scheduleView = "list";
+    }
+  } catch (e) { /* matchMedia nicht verfügbar -> Default "chart" */ }
+
+  const app = document.getElementById("app");
+  clear(app);
+
+  headerEl = h("header", { class: "app-header" });
+  headerTextEl = h("div", { class: "app-header-text" });
+  headerAsideEl = h("div", { class: "app-header-aside" });
+  timerEl = h("div", { id: "timerBanner" });
+  headerAsideEl.append(timerEl); // Timer kompakt oben rechts, neben dem Link
+  headerEl.append(headerTextEl, headerAsideEl);
+  tabsEl = h("div", { class: "tabs" });
+  toolbarEl = h("div", { class: "toolbar" });
+  mount = h("main", { id: "viewMount" });
+
+  app.append(headerEl, tabsEl, toolbarEl, mount);
+
+  renderProjectLinks();
+  buildTabs();
+  store.subscribe(render);
+  render();
+  startTimerTick();
+}
+
+// Projekt-Verweise. "Ein eigenes Board erstellen" sitzt im Header-Fluss oben rechts
+// (neben dem Timer) -> überlappt nichts. Fork-Ribbon nur in der gehosteten Demo
+// (erkennbar an der eingebetteten Demo-Insel, gleiches Gate wie der Demo-Button).
+function renderProjectLinks() {
+  const onDemo = !!document.getElementById("demo-data");
+
+  if (onDemo) {
+    document.body.appendChild(
+      h("a", {
+        class: "fork-ribbon",
+        href: "https://github.com/jbtls/project-board",
+        target: "_blank", rel: "noopener noreferrer",
+        "aria-label": "Projekt auf GitHub ansehen",
+      }, "Auf GitHub ansehen")
+    );
+  }
+
+  headerAsideEl.appendChild(
+    h("a", {
+      class: "own-board-link",
+      href: "https://jbtls.github.io/project-board/",
+      target: "_blank", rel: "noopener noreferrer",
+    }, "＋ Ein eigenes Board erstellen")
+  );
+}
+
+function buildTabs() {
+  clear(tabsEl);
+  for (const v of VIEWS) {
+    tabsEl.appendChild(
+      h("button", {
+        class: "tab" + (store.view === v.id ? " active" : ""),
+        onclick: () => store.setView(v.id),
+        dataset: { view: v.id },
+      }, v.label)
+    );
+  }
+}
+
+function renderHeader() {
+  const cfg = store.getBoard().config;
+  clear(headerTextEl); // nur den Text-Teil neu rendern; Aside (Timer/Link) bleibt
+  headerTextEl.append(
+    h("h1", {}, cfg.title || "Lern-Kanban"),
+    cfg.subtitle ? h("div", { class: "sub" }, cfg.subtitle) : null
+  );
+}
+
+function renderTimerBanner() {
+  clear(timerEl);
+  const { taskId, start: ts } = store.timer;
+  if (!taskId || !ts) { timerEl.style.display = "none"; return; }
+  const t = store.getBoard().tasks.find((x) => x.id === taskId);
+  timerEl.style.display = "flex";
+  const sec = Math.round((Date.now() - ts) / 1000);
+  const mm = Math.floor(sec / 60), ss = String(sec % 60).padStart(2, "0");
+  timerEl.append(
+    h("span", { class: "elapsed" }, `⏱ ${mm}:${ss}`),
+    h("strong", { class: "tb-title", title: t ? t.title : "" }, t ? t.title : ""),
+    h("button", { class: "stop-btn", title: "Timer stoppen", "aria-label": "Timer stoppen", onclick: () => store.stopTimer() }, "⏹")
+  );
+}
+
+function startTimerTick() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => { if (store.timer.taskId) renderTimerBanner(); }, 1000);
+}
+
+function renderToolbar() {
+  clear(toolbarEl);
+  if (store.view === "settings") return; // Einstellungen brauchen keine Filter
+
+  const board = store.getBoard();
+  const search = h("input", {
+    class: "search", type: "text", placeholder: "Suche (Titel, Inhalt, ID)…",
+    value: store.filters.q,
+    // Nur die Inhaltsansicht neu rendern (nicht die Toolbar) -> Fokus bleibt.
+    oninput: (e) => { store.filters.q = e.target.value; renderView(); },
+  });
+
+  const catChips = h("div", { class: "chips" },
+    chip("Alle", store.filters.category === "all", () => store.setFilter({ category: "all" })),
+    board.config.categories.map((c) =>
+      chip(c.prefix || c.label, store.filters.category === c.id,
+        () => store.setFilter({ category: c.id }), c.color, c.label))
+  );
+
+  const phaseChips = h("div", { class: "chips" },
+    board.config.phases.map((p) =>
+      chip(p.label, store.filters.phase === p.id,
+        () => store.setFilter({ phase: store.filters.phase === p.id ? "all" : p.id })))
+  );
+
+  // Demo-Button nur in der gehosteten Variante (eingebettete Demo-Insel vorhanden)
+  const demoAvailable = !!document.getElementById("demo-data");
+
+  const items = [
+    search, catChips,
+    h("span", { class: "filter-sep", "aria-hidden": "true" }),
+    phaseChips,
+    h("div", { class: "spacer" }),
+    store.view === "gantt" ? scheduleToggle() : null,
+    demoAvailable ? h("button", { class: "btn", onclick: () => loadDemo() }, "Demo laden") : null,
+    h("button", { class: "btn", onclick: () => pickFile() }, "Import"),
+    exportMenu(),
+  ].filter(Boolean);
+  toolbarEl.append(...items);
+}
+
+function exportMenu() {
+  const details = h("details", { class: "menu" });
+  const summary = h("summary", { class: "btn pri" }, "Export ▾");
+  const close = () => { details.open = false; };
+  details.append(summary,
+    h("div", { class: "menu-list" },
+      h("button", { class: "menu-item", onclick: () => { close(); exportJson(); } }, "Als JSON"),
+      h("button", { class: "menu-item", onclick: () => { close(); exportOnepager(); } }, "Als Onepager (HTML)")));
+  return details;
+}
+
+function chip(label, on, onclick, color, title) {
+  const attrs = { class: "chip" + (on ? " on" : ""), onclick };
+  if (title) attrs.title = title;
+  if (on && color) attrs.style = { background: color, borderColor: color, color: "#fff" };
+  return h("button", attrs, label);
+}
+
+function pickFile() {
+  const input = h("input", { type: "file", accept: ".json", style: { display: "none" } });
+  input.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (f) importFromFile(f);
+  });
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(() => input.remove(), 1000);
+}
+
+// Segmented-Toggle Gantt <-> Liste für den Zeitplan-Tab.
+function scheduleToggle() {
+  const seg = (id, label) => h("button", {
+    class: "seg-btn" + (store.scheduleView === id ? " on" : ""),
+    onclick: () => store.setScheduleView(id),
+  }, label);
+  return h("div", { class: "seg-toggle" }, seg("chart", "Gantt"), seg("list", "Liste"));
+}
+
+// Nur die Inhaltsansicht (ohne Header/Toolbar) — für fokuserhaltende Updates.
+function renderView() {
+  clear(mount);
+  if (store.view === "kanban") renderBoard(mount);
+  else if (store.view === "gantt") {
+    if (store.scheduleView === "list") renderList(mount);
+    else renderGantt(mount);
+  }
+  else if (store.view === "settings") renderSettings(mount);
+}
+
+function render() {
+  renderHeader();
+  renderTimerBanner();
+  buildTabs();
+  renderToolbar();
+  renderView();
+}
+
+  return { start };
+})();
+if (__M_app && typeof __M_app.start === 'function') __M_app.start();
+})();</script>
+</body>
+</html>

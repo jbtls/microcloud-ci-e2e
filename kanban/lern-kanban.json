@@ -1,0 +1,649 @@
+{
+  "version": 2,
+  "boardId": "board_lf10_kw47_microcloud_ci",
+  "config": {
+    "title": "LF10 – Microcloud-Stack mit Git, GitHub und CI",
+    "subtitle": "Projektwoche KW47 · 12ITS · Hausaufgabe in KW46",
+    "dateMode": "kw",
+    "startDate": "2026-11-09",
+    "endDate": "2026-11-22",
+    "naming": {
+      "scheme": "prefix-wbs",
+      "format": "{prefix} {wbs}"
+    },
+    "columns": [
+      {
+        "id": "todo",
+        "title": "Zu erledigen"
+      },
+      {
+        "id": "wip",
+        "title": "In Bearbeitung"
+      },
+      {
+        "id": "stuck",
+        "title": "Ich komme nicht weiter"
+      },
+      {
+        "id": "done",
+        "title": "Erledigt"
+      }
+    ],
+    "categories": [
+      {
+        "id": "vor",
+        "label": "Vorbereitung und Abgabe",
+        "prefix": "ORG",
+        "color": "#64748B"
+      },
+      {
+        "id": "git",
+        "label": "Git und GitHub",
+        "prefix": "GIT",
+        "color": "#2563EB"
+      },
+      {
+        "id": "ci",
+        "label": "CI verstehen",
+        "prefix": "CI",
+        "color": "#059669"
+      },
+      {
+        "id": "dev",
+        "label": "Branching und Apache",
+        "prefix": "DEV",
+        "color": "#7C3AED"
+      },
+      {
+        "id": "zus",
+        "label": "Zusatz",
+        "prefix": "ZUS",
+        "color": "#D97706"
+      }
+    ],
+    "phases": [
+      {
+        "id": "ha",
+        "label": "KW46 – Hausaufgabe",
+        "start": "2026-11-13",
+        "end": "2026-11-15",
+        "hoursPerWeek": 1,
+        "color": "#64748B"
+      },
+      {
+        "id": "kw47",
+        "label": "KW47 – Projektwoche",
+        "start": "2026-11-16",
+        "end": "2026-11-20",
+        "hoursPerWeek": 6,
+        "color": "#2563EB"
+      }
+    ]
+  },
+  "people": [],
+  "blockers": [],
+  "tasks": [
+    {
+      "id": "ha",
+      "parentId": null,
+      "categoryId": "vor",
+      "phaseId": "ha",
+      "columnId": "todo",
+      "title": "Hausaufgabe: GitHub-Account mit 2FA vorbereiten",
+      "body": "## Ziel\nDein GitHub-Account ist **vor der Projektwoche** vollständig eingerichtet, damit du im Unterricht sofort starten kannst.\n\n## Warum?\nGitHub verlangt von allen, die Code hochladen, eine Zwei-Faktor-Authentifizierung (2FA). Die Einrichtung braucht E-Mail und Smartphone.\n\n## Anleitung\nSchritt für Schritt: `anleitung/00-hausaufgabe-github-account.md` (Link unten).",
+      "estH": 0.5,
+      "loggedM": 0,
+      "order": 0,
+      "deps": [],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "ha_1",
+          "text": "Account angelegt (Plan: Free), E-Mail bestätigt",
+          "done": false
+        },
+        {
+          "id": "ha_2",
+          "text": "2FA mit Authenticator-App aktiviert",
+          "done": false
+        },
+        {
+          "id": "ha_3",
+          "text": "Recovery-Codes gesichert",
+          "done": false
+        },
+        {
+          "id": "ha_4",
+          "text": "„Keep my email addresses private“ aktiviert, noreply-Adresse notiert",
+          "done": false
+        },
+        {
+          "id": "ha_5",
+          "text": "Ab- und wieder angemeldet: 2FA funktioniert",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "00 – Hausaufgabe GitHub-Account",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/00-hausaufgabe-github-account.md"
+        },
+        {
+          "label": "GitHub Docs: 2FA konfigurieren",
+          "url": "https://docs.github.com/de/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication"
+        }
+      ]
+    },
+    {
+      "id": "p0",
+      "parentId": null,
+      "categoryId": "vor",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Projektstart: Ziel, Definition of Done, Weg wählen",
+      "body": "## Ziel\nDu kennst Ausgangssituation, Ziel und *Definition of Done* des Projekts und hast deinen Weg gewählt.\n\n| Weg | Material |\n|---|---|\n| Experte | nur die Kundenanforderungen im README |\n| Standard | Phasenübersicht im README + Hilfeseiten |\n| Basis | geführte Anleitungen im Ordner `anleitung/` |",
+      "estH": 0.5,
+      "loggedM": 0,
+      "order": 1,
+      "deps": [
+        "ha"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "p0_1",
+          "text": "Projektauftrag (README) gelesen",
+          "done": false
+        },
+        {
+          "id": "p0_2",
+          "text": "Definition of Done verstanden",
+          "done": false
+        },
+        {
+          "id": "p0_3",
+          "text": "Weg gewählt: Experte / Standard / Basis",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "Projektauftrag (README)",
+          "url": "https://github.com/jbtls/microcloud-ci#readme"
+        }
+      ]
+    },
+    {
+      "id": "p1",
+      "parentId": null,
+      "categoryId": "git",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Git einrichten und SSH-Schlüssel bei GitHub hinterlegen",
+      "body": "## Ziel\nDein LXC-Container darf per SSH-Schlüssel in deine GitHub-Repositories pushen.\n\n## Fertig, wenn …\n`ssh -T git@github.com` antwortet mit `Hi benutzername! You've successfully authenticated …`\n\n## Achtung\nNur den **öffentlichen** Schlüssel (`~/.ssh/id_ed25519.pub`) bei GitHub eintragen. Hängt die Verbindung, Port 22 ist gesperrt → Fallback über Port 443 (siehe Anleitung).",
+      "estH": 0.5,
+      "loggedM": 0,
+      "order": 2,
+      "deps": [
+        "p0"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "p1_1",
+          "text": "git installiert, user.name / user.email (noreply) gesetzt",
+          "done": false
+        },
+        {
+          "id": "p1_2",
+          "text": "Schlüsselpaar mit ssh-keygen -t ed25519 erzeugt",
+          "done": false
+        },
+        {
+          "id": "p1_3",
+          "text": "Öffentlichen Schlüssel bei GitHub hinterlegt",
+          "done": false
+        },
+        {
+          "id": "p1_4",
+          "text": "ssh -T git@github.com erfolgreich",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "01 – SSH-Schlüssel",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/01-ssh-key.md"
+        },
+        {
+          "label": "GitHub SSH-Fingerprints",
+          "url": "https://docs.github.com/de/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints"
+        },
+        {
+          "label": "Typische Fehler",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/hilfe/typische-fehler.md"
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "parentId": null,
+      "categoryId": "git",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Repo aus der Vorlage erzeugen und Stack einspielen",
+      "body": "## Ziel\nDein Stack aus Modul 4 liegt in deinem eigenen, **öffentlichen** Repo und wird automatisch getestet.\n\n## Erwartung\nDer CI-Lauf wird **rot**. Das ist Absicht. Finde heraus, in welchem Schritt und warum.",
+      "estH": 0.75,
+      "loggedM": 0,
+      "order": 3,
+      "deps": [
+        "p1"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "p2_1",
+          "text": "Repo „microcloud“ über „Use this template“ erzeugt (Public)",
+          "done": false
+        },
+        {
+          "id": "p2_2",
+          "text": "Alter Stack gestoppt, ~/microcloud → ~/microcloud-alt",
+          "done": false
+        },
+        {
+          "id": "p2_3",
+          "text": "Repo nach ~/microcloud geklont, compose.yml + html/ übernommen",
+          "done": false
+        },
+        {
+          "id": "p2_4",
+          "text": "Erster Commit gepusht",
+          "done": false
+        },
+        {
+          "id": "p2_5",
+          "text": "Roten Schritt und Fehlermeldung notiert und erklärt",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "02 – Repo anlegen & Stack einspielen",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/02-repo-anlegen-und-stack-einspielen.md"
+        },
+        {
+          "label": "CI-Log lesen",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/hilfe/ci-log-lesen.md"
+        },
+        {
+          "label": "Git-Spickzettel",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/hilfe/git-spickzettel.md"
+        }
+      ]
+    },
+    {
+      "id": "p3",
+      "parentId": null,
+      "categoryId": "git",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Port 8085: der erste grüne Build",
+      "body": "## Ziel\nDer Stack veröffentlicht Port **8085**, läuft lokal und die CI ist **grün**.\n\n## Arbeitsablauf\nändern → lokal testen → `git add` / `git commit` → `git push` → CI prüft",
+      "estH": 0.5,
+      "loggedM": 0,
+      "order": 4,
+      "deps": [
+        "p2"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "p3_1",
+          "text": "Host-Port in compose.yml auf 8085 geändert",
+          "done": false
+        },
+        {
+          "id": "p3_2",
+          "text": "Lokal getestet: curl http://localhost:8085",
+          "done": false
+        },
+        {
+          "id": "p3_3",
+          "text": "Commit + Push",
+          "done": false
+        },
+        {
+          "id": "p3_4",
+          "text": "CI grün, Abzeichen im README zeigt „passing“",
+          "done": false
+        },
+        {
+          "id": "p3_5",
+          "text": "Webserver aus dem Steckbrief notiert",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "03 – Port anpassen",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/03-port-anpassen-erster-gruener-build.md"
+        }
+      ]
+    },
+    {
+      "id": "p4",
+      "parentId": null,
+      "categoryId": "ci",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Den Workflow verstehen (Fragen A–C)",
+      "body": "## Ziel\nDu kannst jeden Schritt der Microcloud-CI erklären und die Fachbegriffe CI, Continuous Delivery und Continuous Deployment abgrenzen.\n\n## Material\n`.github/workflows/microcloud-ci.yml` und die Hilfeseite *Begriffe CI/CD*. Antworten ins Heft oder als `antworten.md` ins Repo.",
+      "estH": 0.75,
+      "loggedM": 0,
+      "order": 5,
+      "deps": [
+        "p3"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "p4_1",
+          "text": "Teil A: Aufbau (Events, Runner, Job, Steps, permissions)",
+          "done": false
+        },
+        {
+          "id": "p4_2",
+          "text": "Teil B: Was wird wann geprüft?",
+          "done": false
+        },
+        {
+          "id": "p4_3",
+          "text": "Teil C: CI vs. CD einordnen",
+          "done": false
+        },
+        {
+          "id": "p4_4",
+          "text": "Antworten mit der Lösung verglichen",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "04 – Workflow verstehen",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/04-workflow-verstehen.md"
+        },
+        {
+          "label": "Begriffe CI/CD",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/hilfe/begriffe-cicd.md"
+        },
+        {
+          "label": "GitHub Docs: Actions verstehen",
+          "url": "https://docs.github.com/de/actions/get-started/understand-github-actions"
+        }
+      ]
+    },
+    {
+      "id": "p5",
+      "parentId": null,
+      "categoryId": "dev",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Branch dev: Umstieg von nginx auf Apache httpd",
+      "body": "## Ziel\nAuf dem Branch `dev` läuft **Apache httpd**, liefert deine Seite aus und die CI auf `dev` ist **grün**. `main` bleibt unverändert.\n\n## Erwartung\nDer erste Versuch (nur das Image tauschen) wird **rot**. Warum? Recherchiere den Web-Ordner (Document Root) des httpd-Images.",
+      "estH": 1.5,
+      "loggedM": 0,
+      "order": 6,
+      "deps": [
+        "p3"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "p5_1",
+          "text": "git switch -c dev",
+          "done": false
+        },
+        {
+          "id": "p5_2",
+          "text": "Nur Image auf httpd:2.4-alpine geändert, gepusht: rot",
+          "done": false
+        },
+        {
+          "id": "p5_3",
+          "text": "Ursache gefunden (diff im Log, curl lokal)",
+          "done": false
+        },
+        {
+          "id": "p5_4",
+          "text": "Volume auf den Document Root von Apache angepasst",
+          "done": false
+        },
+        {
+          "id": "p5_5",
+          "text": "CI auf dev grün, Steckbrief zeigt Apache",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "05 – dev-Branch: Apache",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/05-dev-branch-apache.md"
+        },
+        {
+          "label": "Docker Hub: httpd",
+          "url": "https://hub.docker.com/_/httpd"
+        }
+      ]
+    },
+    {
+      "id": "p6",
+      "parentId": null,
+      "categoryId": "dev",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Pull Request dev → main: erst grün, dann mergen",
+      "body": "## Ziel\nDie Apache-Umstellung ist per Pull Request nach `main` übernommen, **nachdem** der Check grün war. Dein LXC betreibt den neuen Stand von `main`.",
+      "estH": 0.75,
+      "loggedM": 0,
+      "order": 7,
+      "deps": [
+        "p5"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "p6_1",
+          "text": "Pull Request erstellt (base: main ← compare: dev)",
+          "done": false
+        },
+        {
+          "id": "p6_2",
+          "text": "Checks abgewartet, grün",
+          "done": false
+        },
+        {
+          "id": "p6_3",
+          "text": "Gemergt, CI auf main grün",
+          "done": false
+        },
+        {
+          "id": "p6_4",
+          "text": "LXC: git switch main, git pull, docker compose up -d",
+          "done": false
+        },
+        {
+          "id": "p6_5",
+          "text": "Reflexionsfragen beantwortet",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "06 – Pull Request & Merge",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/06-pull-request-und-merge.md"
+        },
+        {
+          "label": "GitHub Docs: Pull Requests",
+          "url": "https://docs.github.com/de/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests"
+        }
+      ]
+    },
+    {
+      "id": "abg",
+      "parentId": null,
+      "categoryId": "vor",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Abgabe: Definition of Done prüfen und in Moodle abgeben",
+      "body": "## Abgabe\n- Link zu deinem Repository\n- Link zu deinem gemergten Pull Request\n\nVorher alle Punkte der *Definition of Done* im README abhaken.",
+      "estH": 0.25,
+      "loggedM": 0,
+      "order": 8,
+      "deps": [
+        "p4",
+        "p6"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "abg_1",
+          "text": "Definition of Done vollständig erfüllt",
+          "done": false
+        },
+        {
+          "id": "abg_2",
+          "text": "Repo-Link in Moodle abgegeben",
+          "done": false
+        },
+        {
+          "id": "abg_3",
+          "text": "PR-Link in Moodle abgegeben",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "Definition of Done",
+          "url": "https://github.com/jbtls/microcloud-ci#definition-of-done"
+        }
+      ]
+    },
+    {
+      "id": "z1",
+      "parentId": null,
+      "categoryId": "zus",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Zusatz A: Wiki-Projekt cicd-test (Release in die Registry)",
+      "body": "## Ziel\nEine Pipeline, die ein eigenes Image baut, testet und als Release in der GitHub Container Registry veröffentlicht (Continuous Delivery).\n\n## Hinweise\n- Fork **öffentlich** lassen\n- Im Fork im Tab *Actions* die Workflows freischalten\n- Bei Pull Requests als *base repository* den eigenen Fork wählen",
+      "estH": 2,
+      "loggedM": 0,
+      "order": 9,
+      "deps": [
+        "abg"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "z1_1",
+          "text": "Fork erstellt und Actions freigeschaltet",
+          "done": false
+        },
+        {
+          "id": "z1_2",
+          "text": "Aufgaben 1–6 aus dem Wiki bearbeitet",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "07 – Zusatz",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/07-zusatz-cicd-test.md"
+        },
+        {
+          "label": "Wiki cicd-test",
+          "url": "https://github.com/jbtls/cicd-test/wiki"
+        }
+      ]
+    },
+    {
+      "id": "z2",
+      "parentId": null,
+      "categoryId": "zus",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Zusatz B: Eigener CI-Test für Uptime Kuma",
+      "body": "## Ziel\nDer Workflow prüft zusätzlich, ob Uptime Kuma auf Port 3001 antwortet. Entwickelt auf einem eigenen Branch und per Pull Request gemergt.",
+      "estH": 1,
+      "loggedM": 0,
+      "order": 10,
+      "deps": [
+        "abg"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "z2_1",
+          "text": "Branch kuma-test angelegt",
+          "done": false
+        },
+        {
+          "id": "z2_2",
+          "text": "Workflow um Start- und Prüfschritt erweitert",
+          "done": false
+        },
+        {
+          "id": "z2_3",
+          "text": "CI grün, Pull Request gemergt",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "07 – Zusatz",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/07-zusatz-cicd-test.md"
+        }
+      ]
+    },
+    {
+      "id": "z3",
+      "parentId": null,
+      "categoryId": "zus",
+      "phaseId": "kw47",
+      "columnId": "todo",
+      "title": "Zusatz C: Release v1.0.0 erstellen",
+      "body": "## Ziel\nDer fertige Stand ist mit dem Tag `v1.0.0` markiert und als GitHub-Release mit Beschreibung veröffentlicht.",
+      "estH": 0.5,
+      "loggedM": 0,
+      "order": 11,
+      "deps": [
+        "abg"
+      ],
+      "assignees": [],
+      "todos": [
+        {
+          "id": "z3_1",
+          "text": "Tag v1.0.0 gesetzt und gepusht",
+          "done": false
+        },
+        {
+          "id": "z3_2",
+          "text": "Release mit Beschreibung veröffentlicht",
+          "done": false
+        },
+        {
+          "id": "z3_3",
+          "text": "Unterschied Commit / Branch / Tag erklärt",
+          "done": false
+        }
+      ],
+      "resources": [
+        {
+          "label": "07 – Zusatz",
+          "url": "https://github.com/jbtls/microcloud-ci/blob/main/anleitung/07-zusatz-cicd-test.md"
+        }
+      ]
+    }
+  ]
+}

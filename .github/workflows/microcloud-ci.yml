@@ -1,0 +1,152 @@
+# ---------------------------------------------------------------------------
+# Microcloud-CI – automatischer Test deines Compose-Stacks
+#
+# Dieser Workflow wird von der Lehrkraft vorgegeben. Er prüft bei jedem Push
+# (auf jeden Branch) und bei jedem Pull Request auf "main", ob dein Stack
+#   1. eine Compose-Datei hat,
+#   2. gültiges Compose-YAML ist,
+#   3. den Host-Port 8085 veröffentlicht,
+#   4. auf GitHubs Testrechner (Runner) startet,
+#   5. auf Port 8085 antwortet und
+#   6. genau deine Datei html/index.html ausliefert.
+#
+# Kosten: In öffentlichen (public) Repositories sind Standard-Runner wie
+# "ubuntu-latest" kostenlos und verbrauchen kein Minutenkontingent.
+# ---------------------------------------------------------------------------
+name: Microcloud-CI
+
+# Auslöser (Events): Wann startet dieser Workflow?
+on:
+  push:                 # bei jedem Push, egal auf welchen Branch
+  pull_request:         # bei jedem Pull Request, der nach "main" mergen will
+    branches: [main]
+  workflow_dispatch:    # zusätzlich per Knopfdruck im Actions-Tab
+
+# Der Workflow darf den Code nur lesen – mehr braucht er nicht.
+permissions:
+  contents: read
+
+# Diesen Port muss dein Stack auf dem Host veröffentlichen.
+env:
+  ZIELPORT: "8085"
+
+jobs:
+  stack-test:
+    name: Compose-Stack testen (Port 8085)
+    # In der Vorlage selbst (Template-Repository) liegt noch kein Stack –
+    # dort wird der Test übersprungen. In deinem Repo läuft er immer.
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest      # frischer Ubuntu-Rechner mit Docker + Compose
+    timeout-minutes: 10
+
+    steps:
+      - name: "1 · Code auschecken"
+        uses: actions/checkout@v7
+
+      - name: "2 · Compose-Datei suchen"
+        run: |
+          for f in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
+            if [ -f "$f" ]; then
+              echo "COMPOSE_DATEI=$f" >> "$GITHUB_ENV"
+              echo "✅ Compose-Datei gefunden: $f"
+              exit 0
+            fi
+          done
+          echo "Inhalt des Repositorys:"
+          ls -la
+          echo "::error title=Keine Compose-Datei gefunden::Im Hauptordner deines Repos liegt keine compose.yml. Hast du deinen Stack aus ~/microcloud schon hineinkopiert, committet und gepusht? (Phase 2)"
+          exit 1
+
+      - name: "3 · YAML-Syntax prüfen"
+        run: |
+          if docker compose config --quiet 2> fehler.txt; then
+            echo "✅ $COMPOSE_DATEI ist gültiges Compose-YAML."
+          else
+            cat fehler.txt
+            echo "::error title=Ungültiges Compose-YAML::Docker Compose kann deine $COMPOSE_DATEI nicht lesen (Meldung siehe oben). Typische Ursachen: Tabs statt Leerzeichen, falsche Einrückung, fehlender Doppelpunkt."
+            exit 1
+          fi
+
+      - name: "4 · Port 8085 prüfen"
+        run: |
+          docker compose config --format json > konfiguration.json
+          # Welcher Service veröffentlicht den Host-Port 8085?
+          SERVICE=$(jq -r --arg p "$ZIELPORT" '
+            .services | to_entries[]
+            | select(any(.value.ports[]?; (.published | tostring) == $p))
+            | .key' konfiguration.json | head -n 1)
+          if [ -z "$SERVICE" ]; then
+            GEFUNDEN=$(jq -r '
+              [ .services | to_entries[] | .key as $s
+                | .value.ports[]? | "\($s) → \(.published):\(.target)" ]
+              | join(", ")' konfiguration.json)
+            echo "::error title=Port $ZIELPORT wird nicht veröffentlicht::Kein Service in deiner $COMPOSE_DATEI veröffentlicht den Host-Port $ZIELPORT. Aktuell veröffentlicht: ${GEFUNDEN:-keine Ports}. Erinnerung: Bei ports gilt \"HOST-PORT:CONTAINER-PORT\"."
+            exit 1
+          fi
+          echo "SERVICE=$SERVICE" >> "$GITHUB_ENV"
+          echo "✅ Service '$SERVICE' veröffentlicht Port $ZIELPORT."
+
+      - name: "5 · Stack starten"
+        run: |
+          # Es wird nur der Service gestartet, der Port 8085 veröffentlicht
+          # (z. B. "web"). Weitere Dienste wie Uptime Kuma bleiben aus.
+          docker compose up -d "$SERVICE"
+          docker compose ps
+
+      - name: "6 · Erreichbarkeit auf Port 8085 prüfen"
+        run: |
+          for versuch in $(seq 1 30); do
+            if curl -s -o /dev/null "http://localhost:$ZIELPORT/"; then
+              echo "✅ Port $ZIELPORT antwortet (Versuch $versuch)."
+              exit 0
+            fi
+            echo "… warte auf den Webserver (Versuch $versuch/30)"
+            sleep 2
+          done
+          echo "::error title=Keine Antwort auf Port $ZIELPORT::Der Container läuft, aber auf http://localhost:$ZIELPORT antwortet niemand. Lauscht der Webserver im Container wirklich auf dem CONTAINER-Port, den du rechts vom Doppelpunkt angegeben hast? Die Container-Logs stehen weiter unten."
+          exit 1
+
+      - name: "7 · Inhalt prüfen (liefert der Server deine index.html aus?)"
+        run: |
+          if [ ! -f html/index.html ]; then
+            echo "::error title=html/index.html fehlt::In deinem Repo fehlt die Datei html/index.html. Hast du den Ordner html aus ~/microcloud-alt mitkopiert und committet?"
+            exit 1
+          fi
+          CODE=$(curl -s -o antwort.html -w '%{http_code}' "http://localhost:$ZIELPORT/")
+          if [ "$CODE" != "200" ]; then
+            echo "::error title=HTTP-Status $CODE::Der Webserver antwortet mit HTTP $CODE statt 200. 403/404 bedeutet meist: Im Web-Ordner des Containers liegt keine index.html – ist das Volume an der richtigen Stelle eingebunden?"
+            exit 1
+          fi
+          if diff -q html/index.html antwort.html > /dev/null; then
+            echo "✅ Der Webserver liefert genau deine html/index.html aus."
+          else
+            echo "Unterschied zwischen deiner html/index.html (---) und der Antwort des Servers (+++):"
+            diff -u html/index.html antwort.html | head -n 40 || true
+            echo "::error title=Falsche Seite ausgeliefert::Der Webserver antwortet, liefert aber nicht deine html/index.html aus (z. B. eine Standardseite). Jedes Webserver-Image hat seinen eigenen Web-Ordner im Container – prüfe in der Doku des Images (Docker Hub), wohin dein Volume eingebunden werden muss."
+            exit 1
+          fi
+
+      - name: "8 · Steckbrief in die Zusammenfassung schreiben"
+        if: always()
+        run: |
+          SERVER=$(curl -s -I "http://localhost:$ZIELPORT/" 2>/dev/null | grep -i '^server:' | cut -d' ' -f2- | tr -d '\r')
+          {
+            echo "## Microcloud-CI – Steckbrief"
+            echo ""
+            echo "| Prüfpunkt | Wert |"
+            echo "|---|---|"
+            echo "| Branch | \`${{ github.head_ref || github.ref_name }}\` |"
+            echo "| Commit | \`${GITHUB_SHA::7}\` |"
+            echo "| Compose-Datei | ${COMPOSE_DATEI:-–} |"
+            echo "| Service auf Port $ZIELPORT | ${SERVICE:-–} |"
+            echo "| Webserver (HTTP-Header \`Server\`) | ${SERVER:-keine Antwort} |"
+            echo "| Ergebnis | ${{ job.status == 'success' && '✅ bestanden' || '❌ fehlgeschlagen – roten Schritt im Log öffnen' }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "9 · Container-Logs anzeigen (nur bei Fehler)"
+        if: failure()
+        run: docker compose logs --no-color || true
+
+      - name: "10 · Aufräumen"
+        if: always()
+        run: docker compose down -v || true

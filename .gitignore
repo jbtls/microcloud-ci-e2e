@@ -1,0 +1,8 @@
+# Laufzeitdaten von Uptime Kuma (Bonus aus Modul 4):
+# Die Datenbank mit Monitoren und Login entsteht erst auf dem Server,
+# wenn der Container läuft – so etwas gehört nicht in ein Git-Repository.
+kuma-data/
+
+# Editor-Sicherungsdateien
+*.swp
+*~
