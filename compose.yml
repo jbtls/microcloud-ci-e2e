@@ -1,12 +1,12 @@
 services:
   web:
-    image: nginx:alpine
+    image: httpd:2.4-alpine
     container_name: technova-web
     restart: unless-stopped
     ports:
       - "8085:80"
     volumes:
-      - ./html:/usr/share/nginx/html:ro
+      - ./html:/usr/local/apache2/htdocs:ro
   kuma:
     image: louislam/uptime-kuma:1
     container_name: technova-kuma
