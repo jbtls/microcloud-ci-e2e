@@ -4,7 +4,7 @@ services:
     container_name: technova-web
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8085:80"
     volumes:
       - ./html:/usr/share/nginx/html:ro
   kuma:
